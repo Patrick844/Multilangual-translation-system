@@ -16,10 +16,7 @@ The project leverages **Hugging Face's MarianMT pre-trained models** and fine-tu
   - French (fr)
   - Romanian (ro)
   - Italian (it)
-  - Spanish (es)
-  - Russian (ru)
-  - Turkish (tr)
-  - Greek (el)
+
 
 - **Domain-Specific Focus:** Specializes in translations related to **health insurance** and **TPA** vocabulary and terminology.
 - **Custom Language Preprocessing:** Language-specific preprocessing steps for each language (e.g., handling accents in French, diacritics in Romanian, and special punctuation in Turkish).
@@ -73,7 +70,7 @@ The Colab notebook is responsible for handling model inference as a server. You 
 
    ---
 
-    ## Usage
+## Usage
 
 ### 1. Data Preprocessing
 Prepare the data for training by using the `data_prep.py` script. This script handles data normalization, diacritics removal, and language-specific preprocessing.
