@@ -199,7 +199,7 @@ def training_pipeline(df,t_type,src,base_model,steps,
         tokenized_datasets_train,tokenized_datasets_eval, model, tokenizer = initialize(data_train,data_eval,t_type,None,base_model,src,trg_language)
         trainer = train(model,tokenized_datasets_train,tokenized_datasets_eval,steps,batch_size,lr,epochs, warmup,tokenizer,t_type)
         trainer.save_model(f"translator_{src}_Arabic")
-        evaluate(df_test,model,tokenizer,src)
+        evaluation(df_test,model,tokenizer,src)
     else:
       df_train, df_eval = split_data(df,0.1)
       data_train = Dataset.from_pandas(df_train)
