@@ -9,6 +9,9 @@ import pandas as pd # DataFrame manipulation (csv file)
 from google.colab import drive
 import evaluate
 from dotenv import load_dotenv
+from lingowiz.metrics import evaluation
+
+import torch
 
 load_dotenv()
 token= os.getenv('HF_TOKEN')
@@ -30,12 +33,11 @@ def split_dataframe(df, test_size=0.2, random_state=None):
     df_train, df_test = train_test_split(df, test_size=test_size, random_state=random_state)
     return df_train, df_test
 
-bleu_m = evaluate.load("bleu")
-chrf_m = evaluate.load("chrf")
-bertscore_m = evaluate.load("bertscore")
+# bleu_m = evaluate.load("bleu")
+# chrf_m = evaluate.load("chrf")
+# bertscore_m = evaluate.load("bertscore")
 
 
-import torch
 
 def compute_metrics(eval_preds, tokenizer):
     preds, labels = eval_preds
@@ -72,31 +74,58 @@ def compute_metrics(eval_preds, tokenizer):
 
 
 def train(model, tokenized_datasets_train, tokenized_datasets_eval,steps,
-          batch_size,lr,epochs, warmup, tokenizer  ):
+          batch_size,lr,epochs, warmup, tokenizer, t_type  ):
     # Adjust training arguments for small dataset
-    training_args = TrainingArguments(
-    output_dir="temp",
-    evaluation_strategy="epoch",  # Evaluate at the end of each epoch
-    logging_strategy="epoch",     # Log training progress at the end of each epoch
-    per_device_train_batch_size=batch_size,  # Batch size for training
-    per_device_eval_batch_size=batch_size,   # Batch size for evaluation
-    learning_rate=lr,                        # Learning rate for fine-tuning
-    num_train_epochs=epochs,                 # Number of epochs
-    warmup_steps=warmup,    
-    save_total_limit=1,                 # Warmup steps
-    fp16=True,                               # Use mixed precision if on GPU
-)
 
-
-    # Setting up the Trainer
-    trainer = Trainer(
-        model=model,
-        args=training_args,
-        train_dataset=tokenized_datasets_train,
-        eval_dataset=tokenized_datasets_eval,
-        compute_metrics=lambda p: compute_metrics(p, tokenizer)
-
+    if t_type=="general":
+        training_args = TrainingArguments(
+        output_dir="temp",
+        evaluation_strategy="epoch",  # Evaluate at the end of each epoch
+        logging_strategy="epoch",     # Log training progress at the end of each epoch
+        per_device_train_batch_size=batch_size,  # Batch size for training
+        per_device_eval_batch_size=batch_size,   # Batch size for evaluation
+        learning_rate=lr,                        # Learning rate for fine-tuning
+        num_train_epochs=epochs,                 # Number of epochs
+        warmup_steps=warmup,    
+        save_total_limit=1,                 # Warmup steps
+        fp16=True,                               # Use mixed precision if on GPU
     )
+
+
+        # Setting up the Trainer
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=tokenized_datasets_train,
+            eval_dataset=tokenized_datasets_eval
+
+        )
+    else:
+                training_args = TrainingArguments(
+        output_dir="temp",
+        evaluation_strategy="epoch",  # Evaluate at the end of each epoch
+        logging_strategy="epoch",     # Log training progress at the end of each epoch
+        per_device_train_batch_size=batch_size,  # Batch size for training
+        per_device_eval_batch_size=batch_size,   # Batch size for evaluation
+        learning_rate=lr,                        # Learning rate for fine-tuning
+        num_train_epochs=epochs,                 # Number of epochs
+        warmup_steps=warmup,    
+        save_total_limit=1,                 # Warmup steps
+        fp16=True,                               # Use mixed precision if on GPU
+        
+    )
+
+
+        # Setting up the Trainer
+        trainer = Trainer(
+            model=model,
+            args=training_args,
+            train_dataset=tokenized_datasets_train,
+            eval_dataset=tokenized_datasets_eval,
+            compute_metrics=lambda p: compute_metrics(p, tokenizer)
+
+        )
+
 
     # Train the model
     trainer.train()
@@ -168,8 +197,9 @@ def training_pipeline(df,t_type,src,base_model,steps,
         data_train = Dataset.from_pandas(df_train)
         data_eval = Dataset.from_pandas(df_eval) # Convert the pandas DataFrame into a Hugging Face Dataset
         tokenized_datasets_train,tokenized_datasets_eval, model, tokenizer = initialize(data_train,data_eval,t_type,None,base_model,src,trg_language)
-        trainer = train(model,tokenized_datasets_train,tokenized_datasets_eval,steps,batch_size,lr,epochs, warmup,tokenizer)
+        trainer = train(model,tokenized_datasets_train,tokenized_datasets_eval,steps,batch_size,lr,epochs, warmup,tokenizer,t_type)
         trainer.save_model(f"translator_{src}_Arabic")
+        evaluate(df_test,model,tokenizer,src)
     else:
       df_train, df_eval = split_data(df,0.1)
       data_train = Dataset.from_pandas(df_train)
