@@ -94,7 +94,6 @@ def train(model, tokenized_datasets_train, tokenized_datasets_eval,steps,
         args=training_args,
         train_dataset=tokenized_datasets_train,
         eval_dataset=tokenized_datasets_eval,
-        tokenizer=tokenizer,
         compute_metrics=lambda p: compute_metrics(p, tokenizer)
 
     )
@@ -143,15 +142,15 @@ def initialize(data_train, data_eval,t_type, special_model,base_model,src,trg):
       model = MarianMTModel.from_pretrained(base_model)
     else:
         model = MarianMTModel.from_pretrained(special_model,token=token)
-        for param in model.model.encoder.parameters():
-          param.requires_grad = False  # Freeze the encoder layers
+        for layer in model.model.encoder.layers[-2:]:
+          for param in layer.parameters():
+            param.requires_grad = False  # Freeze the encoder layers
 
-    print("before tokenize dataset")
     # Tokenize the dataset using the previously defined `tokenize_function`
     # Apply tokenization to the train dataset in batches (batched=True) for efficiency
     tokenized_datasets_train = data_train.map(tokenize_function, batched=True,fn_kwargs={"tokenizer": tokenizer, "src":src,"trg":trg})
     tokenized_datasets_eval = data_eval.map(tokenize_function, batched=True,fn_kwargs={"tokenizer": tokenizer, "src":src,"trg":trg})
-    print("after tokenize dataset")
+    
     # Return the tokenized dataset, the model, and the tokenizer for further use
     return tokenized_datasets_train,tokenized_datasets_eval, model, tokenizer
 

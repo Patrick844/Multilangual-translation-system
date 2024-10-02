@@ -254,14 +254,13 @@ def translation(data, model_config, code, max_length=128, num_beams=3):
     tokenizer = MarianTokenizer.from_pretrained(model_config[1], token=token)
     model = MarianMTModel.from_pretrained(model_config[0],token=token)
 
-    if len(model_config)==4:
+    if len(model_config)>2:
       model_ar = MarianMTModel.from_pretrained(model_config[2],token=token)
       tokenizer_ar = MarianTokenizer.from_pretrained(model_config[3], token=token)
       data = ">>eng<< "+ data
 
 
 
-    print(data)
     inputs = tokenizer(data, return_tensors="pt", padding=True, truncation=True, max_length=max_length)
 
     # Perform translation (inference)
@@ -271,21 +270,19 @@ def translation(data, model_config, code, max_length=128, num_beams=3):
     translated_text = tokenizer.decode(translated_tokens[0], skip_special_tokens=True)
 
 
-    if len(model_config)==4:
-       print("here")
+    if len(model_config)>2:
        inputs = tokenizer_ar(translated_text, return_tensors="pt", padding=True, truncation=True, max_length=max_length)
 
+
        if code == "ron":
-
-
-
         # Perform translation (inference)
         translated_tokens = model_ar.generate(**inputs, num_beams=num_beams)
 
         # Decode the generated tokens to human-readable text
         translated_text = tokenizer_ar.decode(translated_tokens[0], skip_special_tokens=True)
+        print(f"should be arab {translated_text }")
 
-       return translated_text
+        return translated_text
 
 
     return translated_text
