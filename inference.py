@@ -280,8 +280,6 @@ def translation(data, model_config, code, max_length=128, num_beams=3):
 
         # Decode the generated tokens to human-readable text
         translated_text = tokenizer_ar.decode(translated_tokens[0], skip_special_tokens=True)
-        print(f"should be arab {translated_text }")
-
         return translated_text
 
 
@@ -303,11 +301,13 @@ def preprocessing(code, text):
 
 
 def inference(text):
+  print("Detecting Language ...")
   code = detect_language(text)
+  print("Processing Text ...")
   text = preprocessing(code,text)
   model_config = model_dict[code]
-  print("code: ", code)
-  print(text)
+  print("Translating ...")
   text = translation(text,model_config,code)
   language_name = langcodes.get(code).language_name()
+  print("Translation Complete")
   return text,language_name

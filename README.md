@@ -8,6 +8,17 @@ The project leverages **Hugging Face's MarianMT pre-trained models** and fine-tu
 
 ---
 
+## Challenges
+In building the Multilingual Translation System, the biggest challenge I faced was the lack of domain-specific data, particularly in health insurance. I started with only a few key words and manually generated sentences to create a small dataset of 1000 samples. This limited data led me to freeze the final two encoder layers of the MarianMT model to preserve the underlying structure and focus fine-tuning on the specialized domain. The decision to freeze the last 2 encoder layers allowed me to retain generalization while improving performance on specialized health insurance terms.
+
+Additionally, resource limitations made training from scratch impractical, so I leveraged Hugging Face's MarianMT model to save computational costs and ensure scalability. Balancing the need for fine-tuning with keeping the model general enough to handle unseen cases was key, alongside experimenting with different hyperparameters  like Learning rate, Epoch, and Warmup steps to avoid overfitting while optimizing translation accuracy.
+
+---
+
+![Fine Tuning](lingowiz\fr-ar-metrics.png)
+*Figure 1: Fine Tuning Helsinki-NLP/opus-mt-fr-ar .*
+
+
 ## Features
 
 - **Multilingual Translation:** Supports translation across several languages including:
