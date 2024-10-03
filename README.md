@@ -15,9 +15,6 @@ Additionally, resource limitations made training from scratch impractical, so I 
 
 ---
 
-![Fine Tuning](fr-ar-metrics.png)
-*Figure 1: Fine Tuning Helsinki-NLP/opus-mt-fr-ar .*
-
 
 ## Features
 
