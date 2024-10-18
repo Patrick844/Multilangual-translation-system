@@ -1,3 +1,4 @@
+
 # Multilingual Domain-Specific Translation Model
 
 ## Overview
@@ -157,10 +158,46 @@ The project faces some constraints in terms of data availability, particularly d
 
 ---
 
+## Difficulties Faced and How They Were Solved
+
+### 1. **Data Quality and Availability**
+   - **Challenge**: The initial dataset provided was limited in size and quality, especially in terms of domain-specific terminology in healthcare and TPA.
+   - **Solution**: I used a combination of **GPT-generated sentences** and **public healthcare datasets (like OPUS)** to augment the dataset. Preprocessing steps such as spell checking, tokenization, and segmentation were applied to improve data quality.
+
+### 2. **Model Overfitting**
+   - **Challenge**: The model initially overfit to the small dataset, especially on specialized terms, which resulted in poor generalization.
+   - **Solution**: I mitigated this by freezing the **last few layers of the encoder, decoder and embeddings**, which allowed the model to retain its general knowledge of the source languages while specializing only in domain-specific terminology. Additionally, careful tuning of **learning rate** and **early stopping** helped combat overfitting.
+
+### 3. **Evaluation Metrics and Logging**
+   - **Challenge**: Incorporating and tracking multiple evaluation metrics like BLEU, chrF, and BERTScore during training was complex.
+   - **Solution**: I implemented **MLflow** to log these metrics automatically at the end of each epoch, allowing for easy tracking and comparison of results across experiments.
+
+### 4. **Handling Low-Quality Translations**
+   - **Challenge**: Poor-quality translations in the dataset impacted overall model performance.
+   - **Solution**: I applied various **post-processing steps** such as spell checking and sentence segmentation. Additionally, I'm working on a future improvement to implement a **dynamic loss function** that can adapt based on data quality and prioritize learning from more difficult samples.
+
+## Project Structure
+
+- `data_prep.py` - Code for preparing and preprocessing the dataset for training.
+- `train.py` - Fine-tuning and training MarianMT models.
+- `inference.py` - Code for performing inference (translations) using the fine-tuned models.
+- `metrics.py` - Evaluation code to compute BLEU, chrF, and BERTScore.
+- `converter.py` - Convert data from TMX to CSV.
+- `inference_preprocessing.py` - Handles preprocessing for inference data.
+- `README.md` - Project documentation.
+- `.env` - Environment variables (e.g., Hugging Face API keys).
+- `utils.py` - Contains dictionary and utilities.
+
+## MLflow Integration
+
+   - **Extensive logging**: All components of the project are logged using MLflow, including:
+     - **Training and evaluation metrics** such as loss, BLEU, chrF, and BERTScore.
+     - **Train datasets**: The datasets used during training are logged for reproducibility and analysis.
+     - **Inference data with custom ratings**: The inference results are logged along with custom ratings for translation quality, providing insights into model performance on different types of data.
+     - **Custom metrics**: Additional metrics are logged to analyze the model's performance and behavior in specific scenarios, with the goal of optimizing future fine-tuning and improvements.
+
 ## Future Improvements
 
-- **Expand dataset:** Incorporate more domain-specific data to improve translation accuracy.
-- **Additional languages:** Extend support to more languages.
-- **Model improvements:** Explore using other pre-trained models for better accuracy in low-resource settings.
-- **Deploy as an API:** Package the model into a REST API for easier access and usage.
-- To further enhance the model's accuracy and generalization, more domain-specific data will be collected, and additional preprocessing techniques might be employed to ensure higher translation quality.
+- **Dynamic Loss Function**: The proposed custom loss function can be explored to enhance model training, particularly for low-quality or noisy datasets. By dynamically adjusting the loss based on sentence quality, the model can focus more on challenging data.
+- **Additional Languages**: Future iterations of the project could expand support to more languages beyond the current six.
+- **Improved Evaluation Techniques**: Exploring new evaluation metrics that may provide more granular insights into translation quality for medical and TPA-specific content.
