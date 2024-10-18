@@ -1,5 +1,6 @@
 import streamlit as st
 import requests
+import mlflow
 
 
 
@@ -23,14 +24,12 @@ st.title("Multilingual Translator App")
 text = st.text_input("Enter the text you want to translate:")
 
 if text:
-    print("here")
     url = "https://ideal-amoeba-specially.ngrok-free.app/inference"
     body = {"input": text}
-    print("input after")
 
     try:
         # Send request for translation
-        response = requests.post(url, json=body, verify=False)
+        response = requests.get(url, params=body, verify=False)
 
         # Check if the response was successful
         if response.status_code == 200:
@@ -44,9 +43,18 @@ if text:
             st.session_state.translation_dict.append({"original": text, "translation": translated_text, "language": language,"errors_count":errors_count})
             # Display translation history
             for data in st.session_state.translation_dict:
+                st.markdown("---")
                 st.write(f"**Original ({data['language']}):** {data['original']}")
-                st.markdown(f"**Translation:** :blue[{data['translation']}]")
-                st.write(f"**:red[{data['errors_count']} errors]**")
+                if ">>ara<<" in data['translation'].split():
+                   text = data['translation'].split()[1:]
+                   text = " ".join(text)
+                   st.markdown(f"**Translation:** :blue[{text}]")
+                else:
+                    st.markdown(f"**Translation:** :blue[{data['translation']}]")
+                    
+                rating = data['errors_count']
+                rating = round(rating,4)
+                st.write(f"**Rating: :red[{rating}]**")
                 # accept = st.button("Accept",onclick=)
                 # reject = st.button("Reject")
 

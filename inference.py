@@ -1,241 +1,145 @@
-# Importing Librairies
-import gzip  # Used for file decompression
-import shutil # Used for file decompression
-from lxml import etree #Used for xml parsing
-import csv # Used to convert the file to CSV
+
+from lingowiz.utils import lang_code, abbreviation_dict, model_dict
+from lingowiz.inference_preprocessing import TextPreprocessor
 import string
 import pandas as pd
-import numpy as np
-import evaluate
-from datasets import Dataset
 from tqdm import tqdm
-from camel_tools.utils.dediac import dediac_ar
-from camel_tools.utils.normalize import normalize_unicode
-from farasa.segmenter import FarasaSegmenter
-from transformers import MarianTokenizer, MarianMTModel, Trainer, TrainingArguments # HF librairies for fine tuning
-import pandas as pd # DataFrame manipulation (csv file)
-import langcodes
+from transformers import MarianTokenizer, MarianMTModel,GenerationConfig
 from huggingface_hub import hf_hub_download
-import py3langid as langid
-import re
 import unicodedata
 import os
 import fasttext
 from dotenv import load_dotenv
+import langcodes
+import language_tool_python
+import mlflow
+import re
+import warnings
+import torch
+# Suppress all UserWarnings
+warnings.filterwarnings("ignore", category=UserWarning)
 
+# Load languages tool
+tool = language_tool_python.LanguageTool('ar')
+tool_en = language_tool_python.LanguageTool('en')
 
-load_dotenv()
-
-os.environ['CURL_CA_BUNDLE'] = ""
+# Initialize
 tqdm.pandas()
+load_dotenv()
 
 print("Loading the FastText language detection model...")
 print("FastText model loaded.")
 model_path = hf_hub_download(repo_id="facebook/fasttext-language-identification", filename="model.bin")
 fasttext_model = fasttext.load_model(model_path)
 
-
-class TextPreprocessor:
-    def __init__(self, language):
-        self.language = language
-
-    def process(self, text):
-        if self.language == 'eng':  # English (ISO 639-3: eng)
-            return self.preprocess_english(text)
-        elif self.language == 'fra':  # French (ISO 639-3: fra)
-            return self.preprocess_french(text)
-        elif self.language == 'ita':  # Italian (ISO 639-3: ita)
-            return self.preprocess_italian(text)
-        elif self.language == 'rus':  # Russian (ISO 639-3: rus)
-            return self.preprocess_russian(text)
-        elif self.language == 'tur':  # Turkish (ISO 639-3: tur)
-            return self.preprocess_turkish(text)
-        elif self.language == 'spa':  # Spanish (ISO 639-3: spa)
-            return self.preprocess_spanish(text)
-        elif self.language == 'ell':  # Greek (ISO 639-3: ell)
-            return self.preprocess_greek(text)
-        elif self.language == 'ron':  # Greek (ISO 639-3: ell)
-            return self.preprocess_romania(text)
+def detect_language(text):
+    # Detect the language for both columns
+    text = re.sub(r'[^A-Za-z0-9 ]+', '', text)
+    code = fasttext_model.predict(text)[0][0].replace("__label__", "").split("_")[0]
+    # Return both language codes (English, Arabic)
+    return code
 
 
-    ### English-specific Preprocessing
-    def preprocess_english(self, text):
-        # Lowercasing English text
-        text = self.__lowercase_text(text)
-        # Handling contractions and removing extra spaces
-        text = self.__handle_english_contractions(text)
-        text = self.__remove_extra_whitespace(text)
-        return text
 
-    def preprocess_romania(self,text):
-      # Step 1: Lowercasing
-      text = text.lower()
+def preprocessing(code, text):
+  processeur = TextPreprocessor(code)
+  text = processeur.process(text)
+  return text
 
-      # Step 2: Whitespace and punctuation cleaning
-      text = re.sub(r'[^\w\s]', '', text)  # Removes punctuation
-      text = re.sub(r'\s+', ' ', text).strip()  # Removes extra whitespaces
+def processing(text,code):
 
-      # Step 3: Diacritic normalization (optional, only if you want to remove diacritics)
-      text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8')
-      return text
-
-    ### French-specific Preprocessing
-    def preprocess_french(self, text):
-        # Lowercasing French text
-        text = self.__lowercase_text(text)
-        # Normalizing accents in French text
-        text = self.__normalize_french_accents(text)
-        # Handling French punctuation and spacing
-        text = self.__normalize_french_punctuation(text)
-        text = self.__remove_extra_whitespace(text)
-        return text
-
-    ### Italian-specific Preprocessing
-    def preprocess_italian(self, text):
-        # Lowercasing Italian text
-        text = self.__lowercase_text(text)
-        # Italian has no specific accents, but punctuation may need normalization
-        text = self.__normalize_italian_punctuation(text)
-        text = self.__remove_extra_whitespace(text)
-        return text
-
-    ### Russian-specific Preprocessing
-    def preprocess_russian(self, text):
-        # Removing extra whitespace from Russian text
-        text = self.__remove_extra_whitespace(text)
-        # Handle case sensitivity if needed
-        # Note: Lowercasing Russian is optional depending on your task
-        return text
-
-    ### Turkish-specific Preprocessing
-    def preprocess_turkish(self, text):
-        # Lowercasing Turkish text (be cautious with dotted/undotted "i")
-        text = self.__lowercase_turkish(text)
-        # Handling Turkish-specific punctuation
-        text = self.__normalize_turkish_punctuation(text)
-        text = self.__remove_extra_whitespace(text)
-        return text
-
-    ### Spanish-specific Preprocessing
-    def preprocess_spanish(self, text):
-        # Lowercasing Spanish text
-        text = self.__lowercase_text(text)
-        # Handling Spanish accents
-        text = self.__normalize_spanish_accents(text)
-        # Removing extra whitespace
-        text = self.__remove_extra_whitespace(text)
-        return text
-
-    ### Greek-specific Preprocessing
-    def preprocess_greek(self, text):
-        # Lowercasing Greek text
-        text = self.__lowercase_text(text)
-        # Handling Greek accents and punctuation
-        text = self.__normalize_greek_accents(text)
-        text = self.__remove_extra_whitespace(text)
-        return text
-
-    # Utility Functions for All Languages
-    def __remove_extra_whitespace(self, text):
-        return " ".join(text.split())
-
-    def __lowercase_text(self, text):
-        return text.lower()
-
-    # Language-Specific Utility Functions
-    def __handle_english_contractions(self, text):
-        contractions = {"I'm": "I am", "you're": "you are", "isn't": "is not", "can't": "cannot"}
-        for contraction, expanded in contractions.items():
-            text = text.replace(contraction, expanded)
-        return text
-
-    def __normalize_french_accents(self, text):
-
-        return unicodedata.normalize('NFC', text)
-
-    def __normalize_french_punctuation(self, text):
-        # French punctuation often uses non-breaking spaces before : ; ! ?
-        return text.replace(' :', ':').replace(' ;', ';').replace(' ?', '?').replace(' !', '!')
-
-    def __normalize_italian_punctuation(self, text):
-        # Italian-specific punctuation normalization if necessary
-        return text.replace("’", "'")  # Replace curly quotes
-
-    def __lowercase_turkish(self, text):
-        # Turkish lowercase with special handling for dotted/undotted "i"
-        return text.replace('I', 'ı').replace('İ', 'i').lower()
-
-    def __normalize_turkish_punctuation(self, text):
-        # Turkish-specific punctuation normalization
-        return text.replace("’", "'")  # Replace curly quotes
-
-    def __normalize_spanish_accents(self, text):
-        import unicodedata
-        return unicodedata.normalize('NFC', text)
-
-    def __normalize_greek_accents(self, text):
-        import unicodedata
-        return unicodedata.normalize('NFC', text)
+  text = preprocessing(code,text)
+ 
+  print("Finding Model ...")
+  model_config = model_dict[code]
+  return text, model_config
 
 
 
 
+def chunk_data(chunk_size,text):
 
-model_dict = {
-    "eng": ["patrick844/translation_en_ar","Helsinki-NLP/opus-mt-en-ar"],
-    "fra": ["patrick844/translation_fr_ar","Helsinki-NLP/opus-mt-fr-ar"],
-    "ita": ["patrick844/translation_it_ar","Helsinki-NLP/opus-mt-it-ar"],
-    "ron":["patrick844/translation_ro_en","Helsinki-NLP/opus-mt-roa-en","patrick844/translation_en_ar","Helsinki-NLP/opus-mt-en-ar"],
-    "rus":["Helsinki-NLP/opus-mt-ru-ar","Helsinki-NLP/opus-mt-ru-ar"],
-    "tur":["Helsinki-NLP/opus-mt-tr-ar","Helsinki-NLP/opus-mt-tr-ar"],
-    "spa":["Helsinki-NLP/opus-mt-es-ar","Helsinki-NLP/opus-mt-es-ar"],
-    "ell":["Helsinki-NLP/opus-mt-el-ar","Helsinki-NLP/opus-mt-el-ar"]
-}
+    chunk_text=""
+    chunk_list = []
+    for i in range(0,len(text.split(" ")),chunk_size):
+        if i+chunk_size > len(text.split(" ")):
+            chunk_text = text.split(" ")[i:]
+        else:
+            chunk_text = text.split(" ")[i:i+chunk_size]
+        chunk_list.append(chunk_text)
+    return chunk_list
 
-lang_code = {
-    'aa': 'aar', 'ab': 'abk', 'af': 'afr', 'ak': 'aka', 'am': 'amh',
-    'ar': 'ara', 'an': 'arg', 'as': 'asm', 'av': 'ava', 'ay': 'aym',
-    'az': 'aze', 'ba': 'bak', 'be': 'bel', 'bg': 'bul', 'bh': 'bih',
-    'bi': 'bis', 'bm': 'bam', 'bn': 'ben', 'bo': 'bod', 'br': 'bre',
-    'bs': 'bos', 'ca': 'cat', 'ce': 'che', 'ch': 'cha', 'co': 'cos',
-    'cr': 'cre', 'cs': 'ces', 'cu': 'chu', 'cv': 'chv', 'cy': 'cym',
-    'da': 'dan', 'de': 'deu', 'dv': 'div', 'dz': 'dzo', 'ee': 'ewe',
-    'el': 'ell', 'en': 'eng', 'eo': 'epo', 'es': 'spa', 'et': 'est',
-    'eu': 'eus', 'fa': 'fas', 'ff': 'ful', 'fi': 'fin', 'fj': 'fij',
-    'fo': 'fao', 'fr': 'fra', 'fy': 'fry', 'ga': 'gle', 'gd': 'gla',
-    'gl': 'glg', 'gn': 'grn', 'gu': 'guj', 'gv': 'glv', 'ha': 'hau',
-    'he': 'heb', 'hi': 'hin', 'ho': 'hmo', 'hr': 'hrv', 'ht': 'hat',
-    'hu': 'hun', 'hy': 'hye', 'hz': 'her', 'ia': 'ina', 'id': 'ind',
-    'ie': 'ile', 'ig': 'ibo', 'ii': 'iii', 'ik': 'ipk', 'io': 'ido',
-    'is': 'isl', 'it': 'ita', 'iu': 'iku', 'ja': 'jpn', 'jv': 'jav',
-    'ka': 'kat', 'kg': 'kon', 'ki': 'kik', 'kj': 'kua', 'kk': 'kaz',
-    'kl': 'kal', 'km': 'khm', 'kn': 'kan', 'ko': 'kor', 'kr': 'kau',
-    'ks': 'kas', 'ku': 'kur', 'kv': 'kom', 'kw': 'cor', 'ky': 'kir',
-    'la': 'lat', 'lb': 'ltz', 'lg': 'lug', 'li': 'lim', 'ln': 'lin',
-    'lo': 'lao', 'lt': 'lit', 'lu': 'lub', 'lv': 'lav', 'mg': 'mlg',
-    'mh': 'mah', 'mi': 'mri', 'mk': 'mkd', 'ml': 'mal', 'mn': 'mon',
-    'mr': 'mar', 'ms': 'msa', 'mt': 'mlt', 'my': 'mya', 'na': 'nau',
-    'nb': 'nob', 'nd': 'nde', 'ne': 'nep', 'ng': 'ndo', 'nl': 'nld',
-    'nn': 'nno', 'no': 'nor', 'nr': 'nbl', 'nv': 'nav', 'ny': 'nya',
-    'oc': 'oci', 'oj': 'oji', 'om': 'orm', 'or': 'ori', 'os': 'oss',
-    'pa': 'pan', 'pi': 'pli', 'pl': 'pol', 'ps': 'pus', 'pt': 'por',
-    'qu': 'que', 'rm': 'roh', 'rn': 'run', 'ro': 'ron', 'ru': 'rus',
-    'rw': 'kin', 'sa': 'san', 'sc': 'srd', 'sd': 'snd', 'se': 'sme',
-    'sg': 'sag', 'si': 'sin', 'sk': 'slk', 'sl': 'slv', 'sm': 'smo',
-    'sn': 'sna', 'so': 'som', 'sq': 'sqi', 'sr': 'srp', 'ss': 'ssw',
-    'st': 'sot', 'su': 'sun', 'sv': 'swe', 'sw': 'swa', 'ta': 'tam',
-    'te': 'tel', 'tg': 'tgk', 'th': 'tha', 'ti': 'tir', 'tk': 'tuk',
-    'tl': 'tgl', 'tn': 'tsn', 'to': 'ton', 'tr': 'tur', 'ts': 'tso',
-    'tt': 'tat', 'tw': 'twi', 'ty': 'tah', 'ug': 'uig', 'uk': 'ukr',
-    'ur': 'urd', 'uz': 'uzb', 've': 'ven', 'vi': 'vie', 'vo': 'vol',
-    'wa': 'wln', 'wo': 'wol', 'xh': 'xho', 'yi': 'yid', 'yo': 'yor',
-    'za': 'zha', 'zh': 'zho', 'zu': 'zul'
-}
+def compute_rating(tool,translated_text,language_name):
 
-def translation(data, model_config, code, max_length=128, num_beams=3):
+
+  print("Checking Error ...")
+  matches = tool.check(translated_text)
+  number_errors = len(matches)
+  length_sentence = len(translated_text.split(" "))
+
+  print("Generating translation rating ...")
+  rating = 1-(number_errors/length_sentence)
+
+  print(f"Source: {language_name} \n Number of Errors: {number_errors} \n Sentence Length: {length_sentence} \n Rating: {rating}")
+  return rating
+
+  
+def mlflow_logging(source_language, target_language, original,translation,rating):
+
+
+  experiment_name=f"translator_{source_language}_{target_language}_spec"
+  experiment = mlflow.get_experiment_by_name(name=experiment_name)
+  runs=""
+  if experiment:
+    runs = mlflow.search_runs(experiment_names=[experiment_name])
+    run_id  =runs.iloc[0,0]
+    mlflow.set_experiment(experiment_name)
+  else:
+      mlflow.set_experiment(experiment_name)
+      run_id=None
+
+  # Start the MLflow run
+  with mlflow.start_run(run_id=run_id, nested=True):
+      # List artifacts for the given run_id
+      artifacts = mlflow.artifacts.list_artifacts(run_id=run_id)
+
+      # Check if 'inference_data' is already logged
+      artifact_names = [artifact.path for artifact in artifacts]
+      artifact_path = "inference_data.csv"  # Adjust this path if the artifact was stored in a subdirectory
+
+
+      if artifact_path in artifact_names:
+
+        # Load Existing Atrifact
+        local_artifact_path = mlflow.artifacts.download_artifacts(artifact_path=artifact_path, run_id=run_id)
+        df = pd.read_csv(local_artifact_path)
+
+        # Add new data to existing inference data
+        new_data = [{"Original": original, "Translation": translation, "Source":source_language, 'Rating': rating}]
+        new_df = pd.DataFrame(new_data)
+        df = pd.concat([df,new_df])
+        df.to_csv("inference_data.csv", index=False)
+
+        #Log new inference data on mlflow
+        mlflow.log_artifact("inference_data.csv")
+        print("Addindg data to inference_data.csv")
+
+      else:
+          # Define the data for the DataFrame
+          df = [{"Original": original, "Translation": translation, "Source":source_language, 'Rating': rating}]
+          new_df = pd.DataFrame(df)
+
+          # Save the DataFrame to a CSV file
+          new_df.to_csv("inference_data.csv", index=False)
+
+          # Log the CSV file as an artifact
+          mlflow.log_artifact("inference_data.csv")
+          print("Creating new DF and logging as artifact")
+
+
+def translation(data, model_config,language_name="", max_length=512, num_beams=3):
     """
     Function to load a fine-tuned MarianMT model and perform translation on a DataFrame column with a progress bar.
-
     Parameters:
     - data: DataFrame containing the texts to be translated.
     - model_name: Path to the fine-tuned model (default is "translator_en_ar").
@@ -247,7 +151,7 @@ def translation(data, model_config, code, max_length=128, num_beams=3):
     - translated_text: A translated texts.
     """
 
-
+    # HuggingFace token
     token= os.getenv('HF_TOKEN')
 
     # Load the tokenizer and the fine-tuned model
@@ -255,59 +159,78 @@ def translation(data, model_config, code, max_length=128, num_beams=3):
     model = MarianMTModel.from_pretrained(model_config[0],token=token)
 
     if len(model_config)>2:
+
+      # Initialize additional model and tokenizer (English - Arabic)
       model_ar = MarianMTModel.from_pretrained(model_config[2],token=token)
       tokenizer_ar = MarianTokenizer.from_pretrained(model_config[3], token=token)
+      original_text = data
+
+      # Format data for model
       data = ">>eng<< "+ data
 
 
-
-    inputs = tokenizer(data, return_tensors="pt", padding=True, truncation=True, max_length=max_length)
-
+    # Tokenize data (tansform text into number, same transformation as training)
+    inputs = tokenizer(data, return_tensors="pt", padding=True, truncation=True,max_length=max_length)
+    
     # Perform translation (inference)
-    translated_tokens = model.generate(**inputs, num_beams=num_beams)
+    translated_tokens = model.generate(**inputs, num_beams=num_beams, max_length=512)
 
     # Decode the generated tokens to human-readable text
     translated_text = tokenizer.decode(translated_tokens[0], skip_special_tokens=True)
 
 
     if len(model_config)>2:
-       inputs = tokenizer_ar(translated_text, return_tensors="pt", padding=True, truncation=True, max_length=max_length)
-
-
-       if code == "ron":
-        # Perform translation (inference)
-        translated_tokens = model_ar.generate(**inputs, num_beams=num_beams)
-
-        # Decode the generated tokens to human-readable text
-        translated_text = tokenizer_ar.decode(translated_tokens[0], skip_special_tokens=True)
-        return translated_text
-
-
-    return translated_text
-
-def detect_language(text):
-
-        # Detect the language for both columns
-        code = fasttext_model.predict(text)[0][0].replace("__label__", "").split("_")[0]
-        # Return both language codes (English, Arabic)
-        return code
-
-
-
-def preprocessing(code, text):
-  processeur = TextPreprocessor(code)
-  text = processeur.process(text)
-  return text
-
+       rating = compute_rating(tool_en, translated_text, language_name) # Rating
+       print(f"Logging: {language_name} to English ")
+       mlflow_logging(language_name, "English",original_text, translated_text,rating) # Logging 
+       inputs = tokenizer_ar(translated_text, return_tensors="pt", padding=True, truncation=True, max_length=max_length) # Tokenizing
+       translated_tokens = model_ar.generate(**inputs, num_beams=num_beams) # Translationn
+       translated_text = tokenizer_ar.decode(translated_tokens[0], skip_special_tokens=True) # Decode the generated tokens to human-readable text
+       return translated_text
+    else:
+      return translated_text
 
 def inference(text):
+  
+  # Detecting Language
   print("Detecting Language ...")
   code = detect_language(text)
-  print("Processing Text ...")
-  text = preprocessing(code,text)
-  model_config = model_dict[code]
-  print("Translating ...")
-  text = translation(text,model_config,code)
+  if code in list(model_dict.keys()):
+    code = code
+  else:
+    code="eng"
   language_name = langcodes.get(code).language_name()
+  # Checking Text Length
+  chunk_size=100
+  translated_text = ""
+  if len(text.split(" ")) > chunk_size:
+        chunk_list = chunk_data(chunk_size,text) # Chunking data if text too big
+
+        for chunk in chunk_list:
+
+          chunk = " ".join(chunk)
+
+          print("Processing Text...")
+          processed_text, model_config = processing(chunk,code) # Processing
+
+          print("Translating ...")
+          translated_text+=translation(processed_text,model_config,language_name) # Translating
+          print("")
+  else:
+        print("Processing Text ...")
+        processed_text, model_config = processing(text,code) # Processing
+
+        print("Translating ...")
+        translated_text = translation(processed_text,model_config,language_name)
+        print("")
+  if language_name=="Romanian":
+     language_name="English"
+
+  rating = compute_rating(tool, translated_text, language_name)
+
   print("Translation Complete")
-  return text,language_name
+  print("Logging ...")
+  mlflow_logging(language_name, "Arabic", text,translated_text,rating)
+  print("Logging Complete")
+  return translated_text,language_name,rating
+  

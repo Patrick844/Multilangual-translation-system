@@ -1,3 +1,4 @@
+
 import pandas as pd
 import numpy as np
 import evaluate
@@ -15,47 +16,9 @@ import unicodedata
 import swifter
 import py3langid as langid
 import fasttext
+import mlflow
+from lingowiz.utils import lang_code, abbreviation_dict
 tqdm.pandas()
-
-lang_code = {
-    'aa': 'aar', 'ab': 'abk', 'af': 'afr', 'ak': 'aka', 'am': 'amh',
-    'ar': 'ara', 'an': 'arg', 'as': 'asm', 'av': 'ava', 'ay': 'aym',
-    'az': 'aze', 'ba': 'bak', 'be': 'bel', 'bg': 'bul', 'bh': 'bih',
-    'bi': 'bis', 'bm': 'bam', 'bn': 'ben', 'bo': 'bod', 'br': 'bre',
-    'bs': 'bos', 'ca': 'cat', 'ce': 'che', 'ch': 'cha', 'co': 'cos',
-    'cr': 'cre', 'cs': 'ces', 'cu': 'chu', 'cv': 'chv', 'cy': 'cym',
-    'da': 'dan', 'de': 'deu', 'dv': 'div', 'dz': 'dzo', 'ee': 'ewe',
-    'el': 'ell', 'en': 'eng', 'eo': 'epo', 'es': 'spa', 'et': 'est',
-    'eu': 'eus', 'fa': 'fas', 'ff': 'ful', 'fi': 'fin', 'fj': 'fij',
-    'fo': 'fao', 'fr': 'fra', 'fy': 'fry', 'ga': 'gle', 'gd': 'gla',
-    'gl': 'glg', 'gn': 'grn', 'gu': 'guj', 'gv': 'glv', 'ha': 'hau',
-    'he': 'heb', 'hi': 'hin', 'ho': 'hmo', 'hr': 'hrv', 'ht': 'hat',
-    'hu': 'hun', 'hy': 'hye', 'hz': 'her', 'ia': 'ina', 'id': 'ind',
-    'ie': 'ile', 'ig': 'ibo', 'ii': 'iii', 'ik': 'ipk', 'io': 'ido',
-    'is': 'isl', 'it': 'ita', 'iu': 'iku', 'ja': 'jpn', 'jv': 'jav',
-    'ka': 'kat', 'kg': 'kon', 'ki': 'kik', 'kj': 'kua', 'kk': 'kaz',
-    'kl': 'kal', 'km': 'khm', 'kn': 'kan', 'ko': 'kor', 'kr': 'kau',
-    'ks': 'kas', 'ku': 'kur', 'kv': 'kom', 'kw': 'cor', 'ky': 'kir',
-    'la': 'lat', 'lb': 'ltz', 'lg': 'lug', 'li': 'lim', 'ln': 'lin',
-    'lo': 'lao', 'lt': 'lit', 'lu': 'lub', 'lv': 'lav', 'mg': 'mlg',
-    'mh': 'mah', 'mi': 'mri', 'mk': 'mkd', 'ml': 'mal', 'mn': 'mon',
-    'mr': 'mar', 'ms': 'msa', 'mt': 'mlt', 'my': 'mya', 'na': 'nau',
-    'nb': 'nob', 'nd': 'nde', 'ne': 'nep', 'ng': 'ndo', 'nl': 'nld',
-    'nn': 'nno', 'no': 'nor', 'nr': 'nbl', 'nv': 'nav', 'ny': 'nya',
-    'oc': 'oci', 'oj': 'oji', 'om': 'orm', 'or': 'ori', 'os': 'oss',
-    'pa': 'pan', 'pi': 'pli', 'pl': 'pol', 'ps': 'pus', 'pt': 'por',
-    'qu': 'que', 'rm': 'roh', 'rn': 'run', 'ro': 'ron', 'ru': 'rus',
-    'rw': 'kin', 'sa': 'san', 'sc': 'srd', 'sd': 'snd', 'se': 'sme',
-    'sg': 'sag', 'si': 'sin', 'sk': 'slk', 'sl': 'slv', 'sm': 'smo',
-    'sn': 'sna', 'so': 'som', 'sq': 'sqi', 'sr': 'srp', 'ss': 'ssw',
-    'st': 'sot', 'su': 'sun', 'sv': 'swe', 'sw': 'swa', 'ta': 'tam',
-    'te': 'tel', 'tg': 'tgk', 'th': 'tha', 'ti': 'tir', 'tk': 'tuk',
-    'tl': 'tgl', 'tn': 'tsn', 'to': 'ton', 'tr': 'tur', 'ts': 'tso',
-    'tt': 'tat', 'tw': 'twi', 'ty': 'tah', 'ug': 'uig', 'uk': 'ukr',
-    'ur': 'urd', 'uz': 'uzb', 've': 'ven', 'vi': 'vie', 'vo': 'vol',
-    'wa': 'wln', 'wo': 'wol', 'xh': 'xho', 'yi': 'yid', 'yo': 'yor',
-    'za': 'zha', 'zh': 'zho', 'zu': 'zul'
-}
 
 
 def get_language_code(language_name: str) -> str:
@@ -135,9 +98,10 @@ def lowercase_text(text):
 
 ### English-specific Preprocessing
 def preprocess_english(text):
-    text = lowercase_text(text)
+    text = process_medical_data(text)
     text = handle_english_contractions(text)
     text = remove_extra_whitespace(text)
+
     return text
 
 def handle_english_contractions(text):
@@ -214,17 +178,39 @@ def preprocess_greek(text):
 def preprocess_romania(text):
      # Step 1: Lowercasing
     text = text.lower()
-    
+
     # Step 2: Whitespace and punctuation cleaning
     text = re.sub(r'[^\w\s]', '', text)  # Removes punctuation
     text = re.sub(r'\s+', ' ', text).strip()  # Removes extra whitespaces
-    
+
     # Step 3: Diacritic normalization (optional, only if you want to remove diacritics)
     text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8')
     return text
 
 def normalize_greek_accents(text):
     return unicodedata.normalize('NFC', text)
+
+def process_medical_data(data):
+  data = data.replace("."," ")
+  data = data.replace("="," ")
+  data = data.replace("-"," ")
+  data = data.replace("_"," ")
+  data = data.lower()
+  data = expand_abbreviations(data,abbreviation_dict)
+  data = add_space_between_letters_and_numbers(data)
+  return data
+
+def add_space_between_letters_and_numbers(text):
+    # Use regex to insert a space between letters and numbers
+    separated_text = re.sub(r'([a-zA-Z])(\d)', r'\1 \2', text)
+    return separated_text
+
+# Function to expand abbreviations using the dictionary
+def expand_abbreviations(text, abbreviation_dict):
+    pattern = re.compile(r'\b(' + '|'.join(re.escape(key) for key in abbreviation_dict.keys()) + r')\b')
+    expanded_text = pattern.sub(lambda x: abbreviation_dict[x.group()], text)
+    return expanded_text
+
 
 def format_table(filepath: str, source: str, output_file: str) -> None:
     """
@@ -334,6 +320,8 @@ def format_table(filepath: str, source: str, output_file: str) -> None:
         # Step 11: Save the processed DataFrame to a new CSV file
         print("Saving the processed data to a CSV file...")
         df.to_csv(output_file, index=False)
+        dataset: PandasDataset = mlflow.data.from_pandas(df, source=output_file)
+        mlflow.log_input(dataset,context="training")
         print(f"Data successfully saved to '{output_file}'.")
         print("Data processing complete.")
 
@@ -344,5 +332,8 @@ def format_table(filepath: str, source: str, output_file: str) -> None:
     except Exception as e:
             print(f"An error occurred: {e}")
             raise
+
+
+
 
 
