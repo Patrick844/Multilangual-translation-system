@@ -1,7 +1,0 @@
-lingowiz
-========
-
-.. toctree::
-   :maxdepth: 4
-
-   lingowiz
