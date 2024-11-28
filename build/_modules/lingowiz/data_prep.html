@@ -1,0 +1,1004 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lingowiz.data_prep &mdash; LingoWiz  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            LingoWiz
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../lingowiz.html">lingowiz package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">lingowiz</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">LingoWiz</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lingowiz.data_prep</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lingowiz.data_prep</h1><div class="highlight"><pre>
+<span></span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module Name: data_prep.py</span>
+
+<span class="sd">This module provides functionality for preprocessing text data in various languages,</span>
+<span class="sd">formatting dataframes, and preparing datasets for training machine translation models</span>
+<span class="sd">like MarianMT.</span>
+
+<span class="sd">Features</span>
+<span class="sd">--------</span>
+<span class="sd">- Language-specific preprocessing functions for:</span>
+<span class="sd">  - English</span>
+<span class="sd">  - French</span>
+<span class="sd">  - Italian</span>
+<span class="sd">  - Russian</span>
+<span class="sd">  - Turkish</span>
+<span class="sd">  - Spanish</span>
+<span class="sd">  - Greek</span>
+<span class="sd">  - Romanian</span>
+<span class="sd">- General utility functions for:</span>
+<span class="sd">  - Removing whitespace</span>
+<span class="sd">  - Expanding abbreviations</span>
+<span class="sd">  - Normalizing text (e.g., punctuation, accents)</span>
+<span class="sd">- Automatic language detection using FastText.</span>
+<span class="sd">- Integration with MLflow for tracking data inputs.</span>
+<span class="sd">- Processes source and target language columns for fine-tuning MarianMT.</span>
+
+<span class="sd">Main Classes and Functions</span>
+<span class="sd">--------------------------</span>
+<span class="sd">Text Preprocessing Functions:</span>
+<span class="sd">    - ``preprocess_english(text)``: Handles English-specific preprocessing.</span>
+<span class="sd">    - ``preprocess_french(text)``: Handles French-specific preprocessing.</span>
+<span class="sd">    - ``preprocess_italian(text)``: Handles Italian-specific preprocessing.</span>
+<span class="sd">    - ``preprocess_russian(text)``: Handles Russian-specific preprocessing.</span>
+<span class="sd">    - ``preprocess_turkish(text)``: Handles Turkish-specific preprocessing.</span>
+<span class="sd">    - ``preprocess_spanish(text)``: Handles Spanish-specific preprocessing.</span>
+<span class="sd">    - ``preprocess_greek(text)``: Handles Greek-specific preprocessing.</span>
+<span class="sd">    - ``preprocess_romania(text)``: Handles Romanian-specific preprocessing.</span>
+
+<span class="sd">Utility Functions:</span>
+<span class="sd">    - ``get_language_code(language_name)``: Retrieves ISO 639-3 language codes.</span>
+<span class="sd">    - ``detect_language(row, src, model)``: Detects source and target languages in a DataFrame row.</span>
+<span class="sd">    - ``rm_whitespace(text)``: Removes unnecessary whitespace from text.</span>
+<span class="sd">    - ``handle_english_contractions(text)``: Expands English contractions.</span>
+<span class="sd">    - ``expand_abbreviations(text)``: Expands abbreviations using a dictionary.</span>
+<span class="sd">    - ``format_table(filepath, source, output_file)``: Processes a CSV file, normalizes text, and prepares data for training.</span>
+
+<span class="sd">Dependencies</span>
+<span class="sd">------------</span>
+<span class="sd">- ``pandas``: For handling tabular data.</span>
+<span class="sd">- ``tqdm``: For progress bars during processing.</span>
+<span class="sd">- ``camel_tools``: For Arabic text normalization and diacritic removal.</span>
+<span class="sd">- ``langcodes``: For handling language code lookups.</span>
+<span class="sd">- ``huggingface_hub``: For downloading FastText models.</span>
+<span class="sd">- ``fasttext``: For language detection.</span>
+<span class="sd">- ``mlflow``: For tracking input data for machine learning pipelines.</span>
+
+<span class="sd">Example Usage</span>
+<span class="sd">-------------</span>
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    from data_prep import format_table</span>
+
+<span class="sd">    # Preprocess a CSV file for fine-tuning MarianMT</span>
+<span class="sd">    format_table(</span>
+<span class="sd">        filepath=&quot;input_data.csv&quot;,</span>
+<span class="sd">        source=&quot;English&quot;,</span>
+<span class="sd">        output_file=&quot;processed_data.csv&quot;</span>
+<span class="sd">    )</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">unicodedata</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span> <span class="nn">camel_tools.utils.dediac</span> <span class="kn">import</span> <span class="n">dediac_ar</span>
+<span class="kn">from</span> <span class="nn">camel_tools.utils.normalize</span> <span class="kn">import</span> <span class="n">normalize_unicode</span> <span class="k">as</span> <span class="n">n_unicode</span>
+<span class="kn">import</span> <span class="nn">langcodes</span>
+<span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">hf_hub_download</span>
+<span class="kn">import</span> <span class="nn">fasttext</span>
+<span class="kn">import</span> <span class="nn">mlflow</span>
+<span class="kn">from</span> <span class="nn">mlflow.data</span> <span class="kn">import</span> <span class="n">from_pandas</span>
+<span class="kn">from</span> <span class="nn">mlflow.data.pandas_dataset</span> <span class="kn">import</span> <span class="n">PandasDataset</span>
+<span class="kn">from</span> <span class="nn">lingowiz.utils</span> <span class="kn">import</span> <span class="n">abbreviation_dict</span>
+
+<span class="n">tqdm</span><span class="o">.</span><span class="n">pandas</span><span class="p">()</span>
+
+
+<div class="viewcode-block" id="get_language_code">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.get_language_code">[docs]</a>
+<span class="k">def</span> <span class="nf">get_language_code</span><span class="p">(</span><span class="n">language_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Retrieves the ISO 639-3 language code from the given language name using</span>
+<span class="sd">    langcodes.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    language_name : str</span>
+<span class="sd">        The name of the language (e.g., &quot;French&quot;).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The ISO 639-3 code for the language, or ``None`` if the language is not found.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    LookupError</span>
+<span class="sd">        If the language code cannot be found.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        get_language_code(&quot;French&quot;)  # Returns &#39;fra&#39;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">language</span> <span class="o">=</span> <span class="n">langcodes</span><span class="o">.</span><span class="n">find</span><span class="p">(</span><span class="n">language_name</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">language</span><span class="o">.</span><span class="n">to_alpha3</span><span class="p">()</span>  <span class="c1"># Returns ISO 639-3 code</span>
+    <span class="k">except</span> <span class="ne">LookupError</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="detect_language">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.detect_language">[docs]</a>
+<span class="k">def</span> <span class="nf">detect_language</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Performs automatic language detection and filters out invalid</span>
+<span class="sd">    detections.</span>
+
+<span class="sd">    This function detects the source and target languages in a given row using a language</span>
+<span class="sd">    detection model. If an error occurs during detection, the function returns ``(None, None)``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    row : dict</span>
+<span class="sd">        A single row containing source and target language text.</span>
+<span class="sd">    src : str</span>
+<span class="sd">        The name of the source column in the row.</span>
+<span class="sd">    model : object</span>
+<span class="sd">        The model used for language detection, expected to have a ``predict`` method.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    tuple</span>
+<span class="sd">        A tuple containing:</span>
+<span class="sd">        - str: Code of the source language.</span>
+<span class="sd">        - str: Code of the target language.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    KeyError</span>
+<span class="sd">        If the required keys are missing from the row dictionary.</span>
+<span class="sd">    AttributeError</span>
+<span class="sd">        If the model object does not have a ``predict`` method.</span>
+<span class="sd">    ValueError</span>
+<span class="sd">        If the text preprocessing or model output is invalid.</span>
+<span class="sd">    Exception</span>
+<span class="sd">        For any other unexpected errors.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    In case of an error during language detection, the function returns ``(None, None)``</span>
+<span class="sd">    instead of raising the exception.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="k">try</span><span class="p">:</span>
+
+        <span class="c1"># Preprocess the text for English column</span>
+        <span class="n">text_input</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\b[A-Z][a-z]*\b&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">row</span><span class="p">[</span><span class="n">src</span><span class="p">])</span>
+        <span class="n">text_input</span> <span class="o">=</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s1">&#39;NFC&#39;</span><span class="p">,</span> <span class="n">text_input</span><span class="p">)</span>
+        <span class="n">text_input</span> <span class="o">=</span> <span class="n">text_input</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="c1"># Preprocess the text for Arabic column</span>
+        <span class="n">text_target</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\b[A-Z][a-z]*\b&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;Arabic&quot;</span><span class="p">])</span>
+        <span class="n">text_target</span> <span class="o">=</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s1">&#39;NFC&#39;</span><span class="p">,</span> <span class="n">text_target</span><span class="p">)</span>
+        <span class="n">text_target</span> <span class="o">=</span> <span class="n">text_target</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+        <span class="c1"># Detect the language for both columns</span>
+        <span class="n">code_input</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">text_input</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">code_input</span> <span class="o">=</span> <span class="n">code_input</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;__label__&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">code_target</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">text_target</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">code_target</span> <span class="o">=</span> <span class="n">code_target</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;__label__&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="c1"># Return both language codes (English, Arabic)</span>
+        <span class="k">return</span> <span class="n">code_input</span><span class="p">,</span> <span class="n">code_target</span>
+
+    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># Handle missing keys in the row</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;KeyError: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="k">except</span> <span class="ne">AttributeError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># Handle issues with `model` or its methods</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;AttributeError: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># Handle unexpected values in the text or prediction</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;ValueError: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># Log unexpected exceptions (optional)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unexpected error: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="kc">None</span><span class="p">,</span> <span class="kc">None</span></div>
+
+
+
+<div class="viewcode-block" id="update_rows_2">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.update_rows_2">[docs]</a>
+<span class="k">def</span> <span class="nf">update_rows_2</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Updates a DataFrame row with language-specific tags for MarianMT fine-tuning.</span>
+
+<span class="sd">    This function detects the source and target languages of a given row using a </span>
+<span class="sd">    language detection model. It appends the detected language codes as MarianMT </span>
+<span class="sd">    language tags (e.g., ``&gt;&gt;eng&lt;&lt;``) to the source and target text columns. If the </span>
+<span class="sd">    target language is detected as ``arb``, it is normalized to ``ara``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    row : pandas.Series or dict</span>
+<span class="sd">        A single row of the DataFrame containing source and target language text.</span>
+<span class="sd">    src : str</span>
+<span class="sd">        The name of the source language column in the row (e.g., ``English``).</span>
+<span class="sd">    model : object</span>
+<span class="sd">        The language detection model, expected to have a ``predict`` method.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    pandas.Series or dict</span>
+<span class="sd">        The updated row with language tags appended to the source and target text.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    - The target language code ``arb`` is replaced with ``ara`` for consistency.</span>
+<span class="sd">    - If language detection fails (i.e., ``code_input`` or ``code_target`` is ``None``), the function returns the original row without modification.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        row = {&quot;English&quot;: &quot;Hello&quot;, &quot;Arabic&quot;: &quot;مرحبا&quot;}</span>
+<span class="sd">        updated_row = update_rows_2(row, src=&quot;English&quot;, model=language_model)</span>
+<span class="sd">        print(updated_row)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Detect the source and target language codes for the row</span>
+    <span class="n">code_input</span><span class="p">,</span> <span class="n">code_target</span> <span class="o">=</span> <span class="n">detect_language</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">model</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">code_target</span> <span class="o">==</span> <span class="s2">&quot;arb&quot;</span><span class="p">:</span>
+        <span class="n">code_target</span> <span class="o">=</span> <span class="s2">&quot;ara&quot;</span>
+
+    <span class="c1"># Check if both input and target language codes are valid</span>
+    <span class="k">if</span> <span class="n">code_input</span> <span class="ow">and</span> <span class="n">code_target</span><span class="p">:</span>
+        <span class="c1"># Append detected language codes to a list for tracking (optional)</span>
+
+        <span class="c1"># Update the &#39;English&#39; and &#39;Arabic&#39; columns</span>
+        <span class="c1"># with the MarianMT language code format</span>
+        <span class="n">row</span><span class="p">[</span><span class="n">src</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&gt;&gt;</span><span class="si">{</span><span class="n">code_input</span><span class="si">}</span><span class="s2">&lt;&lt; &quot;</span> <span class="o">+</span> <span class="n">row</span><span class="p">[</span><span class="n">src</span><span class="p">]</span>
+        <span class="n">row</span><span class="p">[</span><span class="s2">&quot;Arabic&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;&gt;&gt;</span><span class="si">{</span><span class="n">code_target</span><span class="si">}</span><span class="s2">&lt;&lt; &quot;</span> <span class="o">+</span> <span class="n">row</span><span class="p">[</span><span class="s2">&quot;Arabic&quot;</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">row</span>
+
+    <span class="k">return</span> <span class="n">row</span></div>
+
+
+
+<div class="viewcode-block" id="rm_whitespace">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.rm_whitespace">[docs]</a>
+<span class="k">def</span> <span class="nf">rm_whitespace</span><span class="p">(</span><span class="n">text</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Removes unnecessary whitespace from the input text.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text from which to remove unnecessary whitespace.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The text with unnecessary whitespace removed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="c1"># Utility functions used across multiple languages</span>
+    <span class="k">return</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">())</span></div>
+
+
+
+<div class="viewcode-block" id="lowercase_text">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.lowercase_text">[docs]</a>
+<span class="k">def</span> <span class="nf">lowercase_text</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts the input text to lowercase.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text to convert to lowercase.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The text converted to lowercase.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="preprocess_english">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.preprocess_english">[docs]</a>
+<span class="k">def</span> <span class="nf">preprocess_english</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Preprocesses English text by applying multiple transformations.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in English.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The preprocessed text after applying all English-specific transformations.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># English-specific Preprocessing</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">process_medical_data</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">handle_english_contractions</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">rm_whitespace</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">text</span></div>
+
+
+
+<div class="viewcode-block" id="handle_english_contractions">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.handle_english_contractions">[docs]</a>
+<span class="k">def</span> <span class="nf">handle_english_contractions</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Expands English contractions in the text.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in English.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The text with contractions expanded.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Normalizing English Contractions</span>
+    <span class="n">contractions</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;I&#39;m&quot;</span><span class="p">:</span> <span class="s2">&quot;I am&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;you&#39;re&quot;</span><span class="p">:</span> <span class="s2">&quot;you are&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;isn&#39;t&quot;</span><span class="p">:</span> <span class="s2">&quot;is not&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;can&#39;t&quot;</span><span class="p">:</span> <span class="s2">&quot;cannot&quot;</span>
+    <span class="p">}</span>
+    <span class="k">for</span> <span class="n">contraction</span><span class="p">,</span> <span class="n">expanded</span> <span class="ow">in</span> <span class="n">contractions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">contraction</span><span class="p">,</span> <span class="n">expanded</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">text</span></div>
+
+
+
+<div class="viewcode-block" id="preprocess_french">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.preprocess_french">[docs]</a>
+<span class="k">def</span> <span class="nf">preprocess_french</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Preprocesses French text by applying specific transformations.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in French.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The preprocessed text after applying all French-specific transformations.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">lowercase_text</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">normalize_french_accents</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">normalize_french_punctuation</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">rm_whitespace</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">text</span></div>
+
+
+
+<div class="viewcode-block" id="normalize_french_accents">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.normalize_french_accents">[docs]</a>
+<span class="k">def</span> <span class="nf">normalize_french_accents</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Standardizes French accents in the text.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in French.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The text with accents normalized.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s1">&#39;NFC&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="normalize_french_punctuation">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.normalize_french_punctuation">[docs]</a>
+<span class="k">def</span> <span class="nf">normalize_french_punctuation</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalizes French punctuation in the text.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in French.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The text with punctuation normalized.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; :&#39;</span><span class="p">,</span> <span class="s1">&#39;:&#39;</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; ;&#39;</span><span class="p">,</span> <span class="s1">&#39;;&#39;</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; ?&#39;</span><span class="p">,</span> <span class="s1">&#39;?&#39;</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; !&#39;</span><span class="p">,</span> <span class="s1">&#39;!&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">text</span></div>
+
+
+
+<div class="viewcode-block" id="preprocess_italian">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.preprocess_italian">[docs]</a>
+<span class="k">def</span> <span class="nf">preprocess_italian</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Preprocesses Italian text by applying specific transformations.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in Italian.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The preprocessed text after applying all Italian-specific transformations.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">lowercase_text</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">normalize_italian_punctuation</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">rm_whitespace</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">text</span></div>
+
+
+
+<div class="viewcode-block" id="normalize_italian_punctuation">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.normalize_italian_punctuation">[docs]</a>
+<span class="k">def</span> <span class="nf">normalize_italian_punctuation</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalizes Italian punctuation in the text.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in Italian.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The text with normalized Italian punctuation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;’&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="preprocess_russian">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.preprocess_russian">[docs]</a>
+<span class="k">def</span> <span class="nf">preprocess_russian</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Preprocesses Russian text by removing unnecessary whitespace.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in Russian.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The preprocessed text with whitespace removed.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">rm_whitespace</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">text</span></div>
+
+
+
+<div class="viewcode-block" id="preprocess_turkish">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.preprocess_turkish">[docs]</a>
+<span class="k">def</span> <span class="nf">preprocess_turkish</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Preprocesses Turkish text by applying specific transformations.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in Turkish.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The preprocessed text after applying all Turkish-specific transformations.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">lowercase_turkish</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">normalize_turkish_punctuation</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">rm_whitespace</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">text</span></div>
+
+
+
+<div class="viewcode-block" id="lowercase_turkish">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.lowercase_turkish">[docs]</a>
+<span class="k">def</span> <span class="nf">lowercase_turkish</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Converts Turkish text to lowercase, handling special Turkish characters.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in Turkish.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The text converted to lowercase with Turkish-specific characters handled.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="s1">&#39;ı&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;İ&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="normalize_turkish_punctuation">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.normalize_turkish_punctuation">[docs]</a>
+<span class="k">def</span> <span class="nf">normalize_turkish_punctuation</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalizes Turkish punctuation in the text.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in Turkish.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The text with normalized Turkish punctuation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;’&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="preprocess_spanish">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.preprocess_spanish">[docs]</a>
+<span class="k">def</span> <span class="nf">preprocess_spanish</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Preprocesses Spanish text by applying specific transformations.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in Spanish.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The preprocessed text after applying all Spanish-specific transformations.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">lowercase_text</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">normalize_spanish_accents</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">rm_whitespace</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">text</span></div>
+
+
+
+<div class="viewcode-block" id="normalize_spanish_accents">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.normalize_spanish_accents">[docs]</a>
+<span class="k">def</span> <span class="nf">normalize_spanish_accents</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalizes Spanish accents in the text.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in Spanish.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The text with normalized Spanish accents.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s1">&#39;NFC&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="preprocess_greek">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.preprocess_greek">[docs]</a>
+<span class="k">def</span> <span class="nf">preprocess_greek</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Preprocesses Greek text by applying specific transformations.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in Greek.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The preprocessed text after applying all Greek-specific transformations.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">lowercase_text</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">normalize_greek_accents</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">rm_whitespace</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">text</span></div>
+
+
+
+<div class="viewcode-block" id="preprocess_romania">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.preprocess_romania">[docs]</a>
+<span class="k">def</span> <span class="nf">preprocess_romania</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Preprocesses Romanian text by applying transformations such as</span>
+<span class="sd">    lowercasing, punctuation removal, whitespace cleaning, and optional</span>
+<span class="sd">    diacritic normalization.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in Romanian.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The preprocessed, normalized, and cleaned text.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># Step 1: Lowercasing</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+    <span class="c1"># Step 2: Whitespace and punctuation cleaning</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[^\w\s]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>  <span class="c1"># Removes punctuation</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>  <span class="c1"># Removes extra whitespaces</span>
+
+    <span class="c1"># Step 3: Diacritic normalization (optional)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s1">&#39;NFKD&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">,</span> <span class="s1">&#39;ignore&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">text</span></div>
+
+
+
+<div class="viewcode-block" id="normalize_greek_accents">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.normalize_greek_accents">[docs]</a>
+<span class="k">def</span> <span class="nf">normalize_greek_accents</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Normalizes Greek text accents using Unicode NFC normalization.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text in Greek.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The text with normalized Greek accents.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s1">&#39;NFC&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span></div>
+
+
+
+
+<div class="viewcode-block" id="process_medical_data">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.process_medical_data">[docs]</a>
+<span class="k">def</span> <span class="nf">process_medical_data</span><span class="p">(</span><span class="n">data</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Processes medical data by normalizing symbols, converting to lowercase,</span>
+<span class="sd">    expanding abbreviations, and adding spaces between letters and numbers.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    data : str</span>
+<span class="sd">        The input medical data text.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The processed and normalized medical data.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This function ensures that medical data is in a standardized format</span>
+<span class="sd">    for downstream processing.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">expand_abbreviations</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">add_space_between_letters_and_numbers</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data</span></div>
+
+
+
+<div class="viewcode-block" id="add_space_between_letters_and_numbers">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.add_space_between_letters_and_numbers">[docs]</a>
+<span class="k">def</span> <span class="nf">add_space_between_letters_and_numbers</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Adds spaces between letters and numbers in the text.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text containing letters and numbers.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The text with spaces inserted between letters and numbers.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    Uses regular expressions to identify and separate letters from numbers.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">separated_text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;([a-zA-Z])(\d)&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\1 \2&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">separated_text</span></div>
+
+
+
+<div class="viewcode-block" id="expand_abbreviations">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.expand_abbreviations">[docs]</a>
+<span class="k">def</span> <span class="nf">expand_abbreviations</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Expands abbreviations in the text based on a predefined abbreviation</span>
+<span class="sd">    dictionary.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    text : str</span>
+<span class="sd">        The input text containing abbreviations.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    str</span>
+<span class="sd">        The text with abbreviations expanded.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    This function uses a dictionary (`abbreviation_dict`) to replace</span>
+<span class="sd">    abbreviations with their corresponding expanded forms.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    KeyError</span>
+<span class="sd">        If the abbreviation key is not found in the dictionary.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\b(&#39;</span> <span class="o">+</span>
+                         <span class="s1">&#39;|&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">abbreviation_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">+</span>
+                         <span class="sa">r</span><span class="s1">&#39;)\b&#39;</span><span class="p">)</span>
+    <span class="n">expanded_text</span> <span class="o">=</span> <span class="n">pattern</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">abbreviation_dict</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">group</span><span class="p">()],</span> <span class="n">text</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">expanded_text</span></div>
+
+
+
+<div class="viewcode-block" id="format_table">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.data_prep.format_table">[docs]</a>
+<span class="k">def</span> <span class="nf">format_table</span><span class="p">(</span><span class="n">filepath</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">source</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">output_file</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Preprocesses a CSV file for MarianMT fine-tuning by normalizing text and</span>
+<span class="sd">    adding language-specific tags.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    filepath : str</span>
+<span class="sd">        Path to the input CSV file.</span>
+<span class="sd">    source : str</span>
+<span class="sd">        Name of the source language (e.g., &#39;French&#39;).</span>
+<span class="sd">    output_file : str</span>
+<span class="sd">        Path to save the processed CSV file.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        The function writes the processed data directly to the output file.</span>
+
+<span class="sd">    Raises</span>
+<span class="sd">    ------</span>
+<span class="sd">    FileNotFoundError</span>
+<span class="sd">        If the input CSV file does not exist.</span>
+<span class="sd">    KeyError</span>
+<span class="sd">        If the required &#39;Arabic&#39; column or the source language column is missing.</span>
+<span class="sd">    Exception</span>
+<span class="sd">        For any unexpected errors during processing.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        format_table(&quot;data_fr.csv&quot;, &quot;French&quot;, &quot;processed_data.csv&quot;)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="c1"># Step 1: Load the data from the CSV file</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Loading data from CSV...&quot;</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filepath</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">source</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span> <span class="ow">or</span> <span class="s2">&quot;Arabic&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="n">error</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Columns &#39;</span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">&#39; and/or &#39;Arabic&#39; not found in the CSV.&quot;</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="n">error</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Loaded </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="si">}</span><span class="s2"> rows.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Step 2: Drop any rows with missing values</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Dropping rows with missing values...&quot;</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">dropna</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="si">}</span><span class="s2"> rows remafining after dropping missing values.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>  <span class="c1"># Print an empty line for clarity</span>
+
+        <span class="c1"># Step 3: Apply normalization to the Arabic column</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Applying normalization to the Arabic column...&quot;</span><span class="p">)</span>
+        <span class="n">df_arabic</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;Arabic&quot;</span><span class="p">]</span>
+        <span class="n">df_arabic</span> <span class="o">=</span> <span class="n">df_arabic</span><span class="o">.</span><span class="n">progress_apply</span><span class="p">(</span><span class="n">n_unicode</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Normalization applied.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Step 4: Apply diacritic removal to the Arabic column</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Removing diacritics from the Arabic column...&quot;</span><span class="p">)</span>
+        <span class="n">df_arabic</span> <span class="o">=</span> <span class="n">df_arabic</span><span class="o">.</span><span class="n">progress_apply</span><span class="p">(</span><span class="n">dediac_ar</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Diacritics removed.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Step 5: Remove extra whitespaces from the Arabic column</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Removing extra whitespaces from the Arabic column...&quot;</span><span class="p">)</span>
+        <span class="n">df_arabic</span> <span class="o">=</span> <span class="n">df_arabic</span><span class="o">.</span><span class="n">progress_apply</span><span class="p">(</span><span class="n">rm_whitespace</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Extra whitespaces removed from Arabic.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="n">df</span><span class="p">[</span><span class="s2">&quot;Arabic&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df_arabic</span>
+
+        <span class="c1"># Step 6: Preprocess the source language based on its type</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Applying preprocessing to the source language: </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">...&quot;</span><span class="p">)</span>
+
+        <span class="k">def</span> <span class="nf">preprocess_source</span><span class="p">(</span><span class="n">row</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;english&#39;</span> <span class="ow">or</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;eng&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">preprocess_english</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;french&#39;</span> <span class="ow">or</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;fra&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">preprocess_french</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;italian&#39;</span> <span class="ow">or</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;ita&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">preprocess_italian</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;russian&#39;</span> <span class="ow">or</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;rus&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">preprocess_russian</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;turkish&#39;</span> <span class="ow">or</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;tur&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">preprocess_turkish</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;spanish&#39;</span> <span class="ow">or</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;spa&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">preprocess_spanish</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;greek&#39;</span> <span class="ow">or</span> <span class="n">source</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span> <span class="o">==</span> <span class="s1">&#39;ell&#39;</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">preprocess_greek</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">preprocess_english</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+
+        <span class="n">df</span><span class="p">[</span><span class="n">source</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">source</span><span class="p">]</span><span class="o">.</span><span class="n">progress_apply</span><span class="p">(</span><span class="n">preprocess_source</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Preprocessing for </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2"> applied.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Step 7: Remove extra whitespaces from the source column</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Removing extra whitespaces from the source column...&quot;</span><span class="p">)</span>
+        <span class="n">df</span><span class="p">[</span><span class="n">source</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">source</span><span class="p">]</span><span class="o">.</span><span class="n">progress_apply</span><span class="p">(</span><span class="n">rm_whitespace</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Extra whitespaces removed from </span><span class="si">{</span><span class="n">source</span><span class="si">}</span><span class="s2">.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="n">repo_id</span> <span class="o">=</span> <span class="s2">&quot;facebook/fasttext-language-identification&quot;</span>
+        <span class="n">model_path</span> <span class="o">=</span> <span class="n">hf_hub_download</span><span class="p">(</span><span class="n">repo_id</span><span class="o">=</span><span class="n">repo_id</span><span class="p">,</span>
+                                     <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;model.bin&quot;</span><span class="p">)</span>
+        <span class="n">fasttext_model</span> <span class="o">=</span> <span class="n">fasttext</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">model_path</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;FastText model loaded.&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Step 8: Update rows for MarianMT fine-tuning by adding language codes</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Updating rows for MarianMT fine-tuning...&quot;</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">swifter</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">row</span><span class="p">:</span> <span class="n">update_rows_2</span><span class="p">(</span><span class="n">row</span><span class="p">,</span>
+                                                        <span class="n">source</span><span class="p">,</span>
+                                                        <span class="n">fasttext_model</span><span class="p">),</span>
+                              <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Rows updated for MarianMT fine-tuning.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Step 9: Get the language code for the source language</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="n">get_language_code</span><span class="p">(</span><span class="n">source</span><span class="p">)</span>
+
+        <span class="c1"># Step 10: Apply mask for filtering rows</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Applying mask for specific Arabic and source string slices...&quot;</span><span class="p">)</span>
+        <span class="n">mask_arabic</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s2">&quot;Arabic&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;&gt;&gt;ara&lt;&lt;&quot;</span><span class="p">)</span>
+        <span class="n">mask_source</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">source</span><span class="p">]</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&gt;&gt;</span><span class="si">{</span><span class="n">code</span><span class="si">}</span><span class="s2">&lt;&lt;&quot;</span><span class="p">)</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">mask_arabic</span> <span class="o">&amp;</span> <span class="n">mask_source</span><span class="p">]</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span><span class="si">}</span><span class="s2"> rows remaining after applying the mask.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Step 11: Save the processed DataFrame to a new CSV file</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Saving the processed data to a CSV file...&quot;</span><span class="p">)</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">output_file</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">dataset</span><span class="p">:</span> <span class="n">PandasDataset</span> <span class="o">=</span> <span class="n">from_pandas</span><span class="p">(</span><span class="n">df</span><span class="p">,</span>
+                                             <span class="n">source</span><span class="o">=</span><span class="n">output_file</span><span class="p">)</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_input</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">context</span><span class="o">=</span><span class="s2">&quot;training&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Data successfully saved to &#39;</span><span class="si">{</span><span class="n">output_file</span><span class="si">}</span><span class="s2">&#39;.&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Data processing complete.&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">FileNotFoundError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="c1"># Re-raise the exception with additional context, preserving the original traceback</span>
+        <span class="k">raise</span> <span class="ne">FileNotFoundError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;The file </span><span class="si">{</span><span class="n">filepath</span><span class="si">}</span><span class="s2"> does not exist.&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span>
+    <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="c1"># Re-raise the KeyError with context about the missing column</span>
+        <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Missing necessary column: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span> <span class="kn">from</span> <span class="nn">exc</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+        <span class="c1"># Log and re-raise the unexpected exception</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;An error occurred: </span><span class="si">{</span><span class="n">exc</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">exc</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Patrick Saadde.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

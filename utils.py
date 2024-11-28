@@ -1,8 +1,37 @@
 model_dict = {
+    """
+    A dictionary mapping ISO 639-1 language codes to lists of model names for translation.
+
+    Each key in the dictionary represents a source language, and the value is a list of
+    Helsinki-NLP MarianMT model names. These models are used for translating between
+    the source language and Arabic, or in the case of Romanian, to and from English
+    and Arabic.
+
+    Structure:
+    - For direct translations: Lists contain two models for the same source-target pair.
+    - For indirect translations (e.g., Romanian): Lists include intermediate English models.
+
+    Example:
+        model_dict = {
+            "eng": ["Helsinki-NLP/opus-mt-en-ar", "Helsinki-NLP/opus-mt-en-ar"],
+            "ron": [
+                "Helsinki-NLP/opus-mt-roa-en",
+                "Helsinki-NLP/opus-mt-roa-en",
+                "Helsinki-NLP/opus-mt-en-ar",
+                "Helsinki-NLP/opus-mt-en-ar",
+            ],
+        }
+
+    Keys:
+        - ISO 639-1 codes for supported languages (e.g., "eng" for English, "fra" for French).
+    Values:
+        - Lists of MarianMT model names for translation.
+
+    """
     "eng": ["Helsinki-NLP/opus-mt-en-ar","Helsinki-NLP/opus-mt-en-ar"],
-    "fra": ["patrick844/translation_fr_ar","Helsinki-NLP/opus-mt-fr-ar"],
-    "ita": ["patrick844/translation_it_ar","Helsinki-NLP/opus-mt-it-ar"],
-    "ron":["patrick844/translation_ro_en","Helsinki-NLP/opus-mt-roa-en","Helsinki-NLP/opus-mt-en-ar","Helsinki-NLP/opus-mt-en-ar"],
+    "fra": ["Helsinki-NLP/opus-mt-fr-ar","Helsinki-NLP/opus-mt-fr-ar"],
+    "ita": ["Helsinki-NLP/opus-mt-it-ar","Helsinki-NLP/opus-mt-it-ar"],
+    "ron":["Helsinki-NLP/opus-mt-roa-en","Helsinki-NLP/opus-mt-roa-en","Helsinki-NLP/opus-mt-en-ar","Helsinki-NLP/opus-mt-en-ar"],
     "rus":["Helsinki-NLP/opus-mt-ru-ar","Helsinki-NLP/opus-mt-ru-ar"],
     "tur":["Helsinki-NLP/opus-mt-tr-ar","Helsinki-NLP/opus-mt-tr-ar"],
     "spa":["Helsinki-NLP/opus-mt-es-ar","Helsinki-NLP/opus-mt-es-ar"],
@@ -13,6 +42,28 @@ model_dict = {
 
 
 lang_code = {
+    """
+    A dictionary mapping ISO 639-1 language codes to ISO 639-3 language codes.
+
+    This dictionary provides a conversion between two widely used language code formats.
+    ISO 639-1 codes are two-letter codes, while ISO 639-3 codes are three-letter codes
+    used for more precise identification of languages.
+
+    Structure:
+        - Keys: ISO 639-1 two-letter language codes (e.g., "en", "fr", "es").
+        - Values: ISO 639-3 three-letter language codes (e.g., "eng", "fra", "spa").
+
+    Example:
+        lang_code = {
+            "en": "eng",  # English
+            "fr": "fra",  # French
+            "es": "spa",  # Spanish
+            "ar": "ara",  # Arabic
+        }
+
+    Usage:
+        - Convert language codes for compatibility with various APIs or datasets.
+    """
     'aa': 'aar', 'ab': 'abk', 'af': 'afr', 'ak': 'aka', 'am': 'amh',
     'ar': 'ara', 'an': 'arg', 'as': 'asm', 'av': 'ava', 'ay': 'aym',
     'az': 'aze', 'ba': 'bak', 'be': 'bel', 'bg': 'bul', 'bh': 'bih',
@@ -56,6 +107,33 @@ lang_code = {
 # Updated comprehensive dictionary of medical and clinical abbreviations in lowercase
 
 abbreviation_dict = {
+    """
+    A dictionary mapping medical and clinical abbreviations to their expanded meanings.
+
+    This dictionary is designed to support text normalization and preprocessing for
+    medical and clinical data. Each key represents a commonly used abbreviation, and
+    the corresponding value is the expanded, human-readable form.
+
+    Structure:
+        - Keys: Medical abbreviations in lowercase (e.g., "bp", "hr", "copd").
+        - Values: Expanded meanings of the abbreviations.
+
+    Example:
+        abbreviation_dict = {
+            "bp": "blood pressure",
+            "hr": "heart rate",
+            "copd": "chronic obstructive pulmonary disease",
+            "dm": "diabetes mellitus",
+        }
+
+    Usage:
+        - Expand abbreviations in medical datasets for improved text readability and analysis.
+        - Facilitate preprocessing in machine learning pipelines for clinical text data.
+
+    Notes:
+        - Abbreviations and their meanings are provided in lowercase for consistency.
+        - Commonly used acronyms across various medical domains are included.
+    """
     'bp': 'blood pressure',
     'hr': 'heart rate',
     'rr': 'respiratory rate',

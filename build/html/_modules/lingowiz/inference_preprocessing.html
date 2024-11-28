@@ -1,0 +1,558 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lingowiz.inference_preprocessing &mdash; LingoWiz  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            LingoWiz
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">LingoWiz</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lingowiz.inference_preprocessing</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lingowiz.inference_preprocessing</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module: inference_preprocess.py</span>
+
+<span class="sd">This module provides functionality for preprocessing text input during inference.</span>
+<span class="sd">It includes a ``TextPreprocessor`` class with methods for handling language-specific</span>
+<span class="sd">text normalization, cleaning, and transformation. The preprocessing ensures that</span>
+<span class="sd">text data is standardized and ready for model inference.</span>
+
+<span class="sd">Classes:</span>
+<span class="sd">--------</span>
+<span class="sd">- **TextPreprocessor**:</span>
+<span class="sd">    A class that encapsulates language-specific preprocessing logic, supporting multiple languages.</span>
+
+<span class="sd">Methods:</span>
+<span class="sd">--------</span>
+<span class="sd">The methods inside ``TextPreprocessor`` include:</span>
+<span class="sd">    - ``preprocess_english``: Preprocesses English text (e.g., handling contractions).</span>
+<span class="sd">    - ``preprocess_french``: Handles French-specific accent and punctuation normalization.</span>
+<span class="sd">    - ``preprocess_italian``: Processes Italian text with punctuation normalization.</span>
+<span class="sd">    - ``preprocess_russian``: Removes extra whitespace from Russian text.</span>
+<span class="sd">    - ``preprocess_turkish``: Handles Turkish-specific lowercase and punctuation rules.</span>
+<span class="sd">    - ``preprocess_spanish``: Normalizes Spanish accents and whitespace.</span>
+<span class="sd">    - ``preprocess_greek``: Normalizes Greek text, including accents and punctuation.</span>
+<span class="sd">    - ``preprocess_romania``: Handles Romanian-specific text transformations.</span>
+
+<span class="sd">Utilities:</span>
+<span class="sd">----------</span>
+<span class="sd">Language-agnostic helper methods include:</span>
+<span class="sd">    - ``__process_medical_data``: Processes medical data, expanding abbreviations and cleaning text.</span>
+<span class="sd">    - ``__expand_abbreviations``: Expands abbreviations using a dictionary.</span>
+<span class="sd">    - ``__add_space_between_letters_and_numbers``: Adds spaces between letters and numbers.</span>
+<span class="sd">    - ``__remove_extra_whitespace``: Cleans up redundant spaces in text.</span>
+<span class="sd">    - ``__normalize_*``: Various normalization methods for punctuation and accents.</span>
+
+<span class="sd">Usage:</span>
+<span class="sd">------</span>
+<span class="sd">This module is intended to standardize text input for natural language processing tasks,</span>
+<span class="sd">ensuring compatibility with models during inference.</span>
+
+<span class="sd">Example:</span>
+<span class="sd">    .. code-block:: python</span>
+
+<span class="sd">        from inference_preprocess import TextPreprocessor</span>
+
+<span class="sd">        # Create a preprocessor for English</span>
+<span class="sd">        preprocessor = TextPreprocessor(language=&quot;eng&quot;)</span>
+<span class="sd">        </span>
+<span class="sd">        # Preprocess some text</span>
+<span class="sd">        clean_text = preprocessor.process(&quot;I&#39;m feeling great! Let&#39;s preprocess this text.&quot;)</span>
+<span class="sd">        print(clean_text)</span>
+
+<span class="sd">Dependencies:</span>
+<span class="sd">-------------</span>
+<span class="sd">- ``re``: Regular expressions for text pattern matching.</span>
+<span class="sd">- ``unicodedata``: Unicode support for diacritic normalization.</span>
+<span class="sd">- ``lingowiz.utils.abbreviation_dict``: A dictionary of abbreviations for medical data expansion.</span>
+
+<span class="sd">Note:</span>
+<span class="sd">-----</span>
+<span class="sd">Extend or customize the ``TextPreprocessor`` class for additional languages or</span>
+<span class="sd">preprocessing requirements as needed.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+
+<span class="kn">from</span> <span class="nn">lingowiz.utils</span> <span class="kn">import</span> <span class="n">abbreviation_dict</span>
+<span class="kn">import</span> <span class="nn">unicodedata</span>
+<span class="kn">import</span> <span class="nn">re</span>
+
+
+<div class="viewcode-block" id="TextPreprocessor">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference_preprocessing.TextPreprocessor">[docs]</a>
+<span class="k">class</span> <span class="nc">TextPreprocessor</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A text preprocessing class for handling</span>
+<span class="sd">    language-specific transformations and normalizations.</span>
+
+<span class="sd">    Attributes:</span>
+<span class="sd">        language (str): The ISO 639-3 language code for preprocessing.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">language</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Initializes the TextPreprocessor with a specific language.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            language (str): The ISO 639-3 language code</span>
+<span class="sd">            for the text (e.g., &#39;&#39;eng&#39;&#39; for English).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">language</span> <span class="o">=</span> <span class="n">language</span>
+
+<div class="viewcode-block" id="TextPreprocessor.process">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference_preprocessing.TextPreprocessor.process">[docs]</a>
+    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Preprocesses text based on the specified language.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The input text to preprocess.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The preprocessed text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">language</span> <span class="o">==</span> <span class="s1">&#39;eng&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_english</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">language</span> <span class="o">==</span> <span class="s1">&#39;fra&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_french</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">language</span> <span class="o">==</span> <span class="s1">&#39;ita&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_italian</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">language</span> <span class="o">==</span> <span class="s1">&#39;rus&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_russian</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">language</span> <span class="o">==</span> <span class="s1">&#39;tur&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_turkish</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">language</span> <span class="o">==</span> <span class="s1">&#39;spa&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_spanish</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">language</span> <span class="o">==</span> <span class="s1">&#39;ell&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_greek</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">language</span> <span class="o">==</span> <span class="s1">&#39;ron&#39;</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_romania</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">preprocess_english</span><span class="p">(</span><span class="n">text</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="TextPreprocessor.preprocess_english">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference_preprocessing.TextPreprocessor.preprocess_english">[docs]</a>
+    <span class="k">def</span> <span class="nf">preprocess_english</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Preprocesses English text with medical data handling,</span>
+<span class="sd">        contraction normalization, and whitespace cleaning.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The English text to preprocess.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The preprocessed English text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__process_medical_data</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__handle_english_contractions</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__remove_extra_whitespace</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">text</span></div>
+
+
+<div class="viewcode-block" id="TextPreprocessor.preprocess_romania">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference_preprocessing.TextPreprocessor.preprocess_romania">[docs]</a>
+    <span class="k">def</span> <span class="nf">preprocess_romania</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Preprocesses Romanian text with lowercasing,</span>
+<span class="sd">        punctuation cleaning, and diacritic normalization.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The Romanian text to preprocess.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The preprocessed Romanian text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[^\w\s]&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;\s+&#39;</span><span class="p">,</span> <span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s1">&#39;NFKD&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s1">&#39;ascii&#39;</span><span class="p">,</span> <span class="s1">&#39;ignore&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">text</span></div>
+
+
+<div class="viewcode-block" id="TextPreprocessor.preprocess_french">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference_preprocessing.TextPreprocessor.preprocess_french">[docs]</a>
+    <span class="k">def</span> <span class="nf">preprocess_french</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Preprocesses French text with accent normalization,</span>
+<span class="sd">        punctuation handling, and whitespace cleaning.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The French text to preprocess.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The preprocessed French text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__lowercase_text</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__normalize_french_accents</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__normalize_french_punctuation</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__remove_extra_whitespace</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">text</span></div>
+
+
+<div class="viewcode-block" id="TextPreprocessor.preprocess_italian">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference_preprocessing.TextPreprocessor.preprocess_italian">[docs]</a>
+    <span class="k">def</span> <span class="nf">preprocess_italian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Preprocesses Italian text with punctuation</span>
+<span class="sd">        normalization and whitespace cleaning.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The Italian text to preprocess.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The preprocessed Italian text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__lowercase_text</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__normalize_italian_punctuation</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__remove_extra_whitespace</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">text</span></div>
+
+
+<div class="viewcode-block" id="TextPreprocessor.preprocess_russian">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference_preprocessing.TextPreprocessor.preprocess_russian">[docs]</a>
+    <span class="k">def</span> <span class="nf">preprocess_russian</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Preprocesses Russian text by removing extra whitespace.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The Russian text to preprocess.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The preprocessed Russian text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__remove_extra_whitespace</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">text</span></div>
+
+
+<div class="viewcode-block" id="TextPreprocessor.preprocess_turkish">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference_preprocessing.TextPreprocessor.preprocess_turkish">[docs]</a>
+    <span class="k">def</span> <span class="nf">preprocess_turkish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Preprocesses Turkish text with lowercase handling</span>
+<span class="sd">        and punctuation normalization.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The Turkish text to preprocess.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The preprocessed Turkish text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__lowercase_turkish</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__normalize_turkish_punctuation</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__remove_extra_whitespace</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">text</span></div>
+
+
+<div class="viewcode-block" id="TextPreprocessor.preprocess_spanish">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference_preprocessing.TextPreprocessor.preprocess_spanish">[docs]</a>
+    <span class="k">def</span> <span class="nf">preprocess_spanish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Preprocesses Spanish text with accent normalization</span>
+<span class="sd">        and whitespace cleaning.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The Spanish text to preprocess.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The preprocessed Spanish text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__lowercase_text</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__normalize_spanish_accents</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__remove_extra_whitespace</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">text</span></div>
+
+
+<div class="viewcode-block" id="TextPreprocessor.preprocess_greek">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference_preprocessing.TextPreprocessor.preprocess_greek">[docs]</a>
+    <span class="k">def</span> <span class="nf">preprocess_greek</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Preprocesses Greek text with accent normalization</span>
+<span class="sd">        and whitespace cleaning.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The Greek text to preprocess.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The preprocessed Greek text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__lowercase_text</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__normalize_greek_accents</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__remove_extra_whitespace</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">text</span></div>
+
+
+    <span class="k">def</span> <span class="nf">__process_medical_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">data</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Processes medical text data by replacing symbols,</span>
+<span class="sd">        expanding abbreviations,</span>
+<span class="sd">        and adding spaces between letters and numbers.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            data (str): The medical text to process.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The processed medical text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;=&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;..&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;...&quot;</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__expand_abbreviations</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">abbreviation_dict</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__add_space_between_letters_and_numbers</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">def</span> <span class="nf">__add_space_between_letters_and_numbers</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Adds spaces between letters and numbers in the text.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The input text.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The text with spaces added between letters and numbers.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;([a-zA-Z])(\d)&#39;</span><span class="p">,</span> <span class="sa">r</span><span class="s1">&#39;\1 \2&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__expand_abbreviations</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">,</span> <span class="n">abbreviation_dict</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Expands abbreviations in the text using a dictionary.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The text containing abbreviations.</span>
+<span class="sd">            abbreviation_dict (dict): The abbreviation-to-expansion mapping.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The text with expanded abbreviations.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">pattern</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span>
+                             <span class="sa">r</span><span class="s1">&#39;\b(&#39;</span> <span class="o">+</span>
+                             <span class="s1">&#39;|&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">escape</span><span class="p">(</span><span class="n">key</span><span class="p">)</span> <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">abbreviation_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span> <span class="o">+</span>
+                             <span class="sa">r</span><span class="s1">&#39;)\b&#39;</span>
+                            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">pattern</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">abbreviation_dict</span><span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">group</span><span class="p">()],</span> <span class="n">text</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__remove_extra_whitespace</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Removes extra whitespace from the text.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The input text.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The text with extra whitespace removed.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="nf">__lowercase_text</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts text to lowercase.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The input text.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The lowercase text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">__handle_english_contractions</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Expands English contractions in the text.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The English text with contractions.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The text with expanded contractions.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">contractions</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;I&#39;m&quot;</span><span class="p">:</span> <span class="s2">&quot;I am&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;you&#39;re&quot;</span><span class="p">:</span> <span class="s2">&quot;you are&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;isn&#39;t&quot;</span><span class="p">:</span> <span class="s2">&quot;is not&quot;</span><span class="p">,</span>
+                        <span class="s2">&quot;can&#39;t&quot;</span><span class="p">:</span> <span class="s2">&quot;cannot&quot;</span><span class="p">}</span>
+        <span class="k">for</span> <span class="n">contraction</span><span class="p">,</span> <span class="n">expanded</span> <span class="ow">in</span> <span class="n">contractions</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="n">contraction</span><span class="p">,</span> <span class="n">expanded</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">text</span>
+
+    <span class="k">def</span> <span class="nf">__normalize_french_accents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Normalizes French accents in the text.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The French text with accents.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The normalized text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s1">&#39;NFC&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__normalize_french_punctuation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Normalizes French punctuation marks.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The French text with punctuation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The text with normalized punctuation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; :&#39;</span><span class="p">,</span> <span class="s1">&#39;:&#39;</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; ;&#39;</span><span class="p">,</span> <span class="s1">&#39;;&#39;</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; ?&#39;</span><span class="p">,</span> <span class="s1">&#39;?&#39;</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; !&#39;</span><span class="p">,</span> <span class="s1">&#39;!&#39;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">text</span>
+
+    <span class="k">def</span> <span class="nf">__normalize_italian_punctuation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Normalizes Italian-specific punctuation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The Italian text with punctuation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The text with normalized punctuation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;’&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__lowercase_turkish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Converts Turkish text to lowercase,</span>
+<span class="sd">        handling special Turkish characters.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The Turkish text.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The lowercase Turkish text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;I&#39;</span><span class="p">,</span> <span class="s1">&#39;ı&#39;</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;İ&#39;</span><span class="p">,</span> <span class="s1">&#39;i&#39;</span><span class="p">)</span>
+        <span class="n">text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">lower</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">text</span>
+
+    <span class="k">def</span> <span class="nf">__normalize_turkish_punctuation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Normalizes Turkish-specific punctuation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The Turkish text with punctuation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The text with normalized punctuation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">text</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;’&quot;</span><span class="p">,</span> <span class="s2">&quot;&#39;&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__normalize_spanish_accents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Normalizes Spanish accents in the text.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The Spanish text with accents.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The normalized Spanish text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s1">&#39;NFC&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__normalize_greek_accents</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Normalizes Greek accents in the text.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            text (str): The Greek text with accents.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            str: The normalized Greek text.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">unicodedata</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="s1">&#39;NFC&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Patrick Saadde.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

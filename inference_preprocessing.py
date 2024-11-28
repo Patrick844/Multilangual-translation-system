@@ -1,172 +1,430 @@
+"""
+Module: inference_preprocess.py
+
+This module provides functionality for preprocessing text input during inference.
+It includes a ``TextPreprocessor`` class with methods for handling language-specific
+text normalization, cleaning, and transformation. The preprocessing ensures that
+text data is standardized and ready for model inference.
+
+Classes:
+--------
+- **TextPreprocessor**:
+    A class that encapsulates language-specific preprocessing logic, supporting multiple languages.
+
+Methods:
+--------
+The methods inside ``TextPreprocessor`` include:
+    - ``preprocess_english``: Preprocesses English text (e.g., handling contractions).
+    - ``preprocess_french``: Handles French-specific accent and punctuation normalization.
+    - ``preprocess_italian``: Processes Italian text with punctuation normalization.
+    - ``preprocess_russian``: Removes extra whitespace from Russian text.
+    - ``preprocess_turkish``: Handles Turkish-specific lowercase and punctuation rules.
+    - ``preprocess_spanish``: Normalizes Spanish accents and whitespace.
+    - ``preprocess_greek``: Normalizes Greek text, including accents and punctuation.
+    - ``preprocess_romania``: Handles Romanian-specific text transformations.
+
+Utilities:
+----------
+Language-agnostic helper methods include:
+    - ``__process_medical_data``: Processes medical data, expanding abbreviations and cleaning text.
+    - ``__expand_abbreviations``: Expands abbreviations using a dictionary.
+    - ``__add_space_between_letters_and_numbers``: Adds spaces between letters and numbers.
+    - ``__remove_extra_whitespace``: Cleans up redundant spaces in text.
+    - ``__normalize_*``: Various normalization methods for punctuation and accents.
+
+Usage:
+------
+This module is intended to standardize text input for natural language processing tasks,
+ensuring compatibility with models during inference.
+
+Example:
+    .. code-block:: python
+
+        from inference_preprocess import TextPreprocessor
+
+        # Create a preprocessor for English
+        preprocessor = TextPreprocessor(language="eng")
+        
+        # Preprocess some text
+        clean_text = preprocessor.process("I'm feeling great! Let's preprocess this text.")
+        print(clean_text)
+
+Dependencies:
+-------------
+- ``re``: Regular expressions for text pattern matching.
+- ``unicodedata``: Unicode support for diacritic normalization.
+- ``lingowiz.utils.abbreviation_dict``: A dictionary of abbreviations for medical data expansion.
+
+Note:
+-----
+Extend or customize the ``TextPreprocessor`` class for additional languages or
+preprocessing requirements as needed.
+"""
+
+
 from lingowiz.utils import abbreviation_dict
 import unicodedata
 import re
 
 
 class TextPreprocessor:
+    """
+    A text preprocessing class for handling
+    language-specific transformations and normalizations.
+
+    Attributes:
+        language (str): The ISO 639-3 language code for preprocessing.
+    """
+
     def __init__(self, language):
+        """
+        Initializes the TextPreprocessor with a specific language.
+
+        Args:
+            language (str): The ISO 639-3 language code
+            for the text (e.g., ''eng'' for English).
+        """
         self.language = language
 
     def process(self, text):
-        if self.language == 'eng':  # English (ISO 639-3: eng)
+        """
+        Preprocesses text based on the specified language.
+
+        Args:
+            text (str): The input text to preprocess.
+
+        Returns:
+            str: The preprocessed text.
+        """
+        if self.language == 'eng':
             return self.preprocess_english(text)
-        elif self.language == 'fra':  # French (ISO 639-3: fra)
+        elif self.language == 'fra':
             return self.preprocess_french(text)
-        elif self.language == 'ita':  # Italian (ISO 639-3: ita)
+        elif self.language == 'ita':
             return self.preprocess_italian(text)
-        elif self.language == 'rus':  # Russian (ISO 639-3: rus)
+        elif self.language == 'rus':
             return self.preprocess_russian(text)
-        elif self.language == 'tur':  # Turkish (ISO 639-3: tur)
+        elif self.language == 'tur':
             return self.preprocess_turkish(text)
-        elif self.language == 'spa':  # Spanish (ISO 639-3: spa)
+        elif self.language == 'spa':
             return self.preprocess_spanish(text)
-        elif self.language == 'ell':  # Greek (ISO 639-3: ell)
+        elif self.language == 'ell':
             return self.preprocess_greek(text)
-        elif self.language == 'ron':  # Greek (ISO 639-3: ell)
+        elif self.language == 'ron':
             return self.preprocess_romania(text)
         else:
-          return self.preprocess_english(text)
+            return self.preprocess_english(text)
 
-
-    ### English-specific Preprocessing
     def preprocess_english(self, text):
-        # Lowercasing English text
+        """
+        Preprocesses English text with medical data handling,
+        contraction normalization, and whitespace cleaning.
+
+        Args:
+            text (str): The English text to preprocess.
+
+        Returns:
+            str: The preprocessed English text.
+        """
         text = self.__process_medical_data(text)
-        # Handling contractions and removing extra spaces
         text = self.__handle_english_contractions(text)
         text = self.__remove_extra_whitespace(text)
         return text
 
-    def preprocess_romania(self,text):
-      # Step 1: Lowercasing
-      text = text.lower()
+    def preprocess_romania(self, text):
+        """
+        Preprocesses Romanian text with lowercasing,
+        punctuation cleaning, and diacritic normalization.
 
-      # Step 2: Whitespace and punctuation cleaning
-      text = re.sub(r'[^\w\s]', '', text)  # Removes punctuation
-      text = re.sub(r'\s+', ' ', text).strip()  # Removes extra whitespaces
+        Args:
+            text (str): The Romanian text to preprocess.
 
-      # Step 3: Diacritic normalization (optional, only if you want to remove diacritics)
-      text = unicodedata.normalize('NFKD', text).encode('ascii', 'ignore').decode('utf-8')
-      return text
+        Returns:
+            str: The preprocessed Romanian text.
+        """
+        text = text.lower()
+        text = re.sub(r'[^\w\s]', '', text)
+        text = re.sub(r'\s+', ' ', text).strip()
+        text = unicodedata.normalize('NFKD', text)
+        text = text.encode('ascii', 'ignore').decode('utf-8')
+        return text
 
-    ### French-specific Preprocessing
     def preprocess_french(self, text):
-        # Lowercasing French text
+        """
+        Preprocesses French text with accent normalization,
+        punctuation handling, and whitespace cleaning.
+
+        Args:
+            text (str): The French text to preprocess.
+
+        Returns:
+            str: The preprocessed French text.
+        """
         text = self.__lowercase_text(text)
-        # Normalizing accents in French text
         text = self.__normalize_french_accents(text)
-        # Handling French punctuation and spacing
         text = self.__normalize_french_punctuation(text)
         text = self.__remove_extra_whitespace(text)
         return text
 
-    ### Italian-specific Preprocessing
     def preprocess_italian(self, text):
-        # Lowercasing Italian text
+        """
+        Preprocesses Italian text with punctuation
+        normalization and whitespace cleaning.
+
+        Args:
+            text (str): The Italian text to preprocess.
+
+        Returns:
+            str: The preprocessed Italian text.
+        """
         text = self.__lowercase_text(text)
-        # Italian has no specific accents, but punctuation may need normalization
         text = self.__normalize_italian_punctuation(text)
         text = self.__remove_extra_whitespace(text)
         return text
 
-    ### Russian-specific Preprocessing
     def preprocess_russian(self, text):
-        # Removing extra whitespace from Russian text
+        """
+        Preprocesses Russian text by removing extra whitespace.
+
+        Args:
+            text (str): The Russian text to preprocess.
+
+        Returns:
+            str: The preprocessed Russian text.
+        """
         text = self.__remove_extra_whitespace(text)
-        # Handle case sensitivity if needed
-        # Note: Lowercasing Russian is optional depending on your task
         return text
 
-    ### Turkish-specific Preprocessing
     def preprocess_turkish(self, text):
-        # Lowercasing Turkish text (be cautious with dotted/undotted "i")
+        """
+        Preprocesses Turkish text with lowercase handling
+        and punctuation normalization.
+
+        Args:
+            text (str): The Turkish text to preprocess.
+
+        Returns:
+            str: The preprocessed Turkish text.
+        """
         text = self.__lowercase_turkish(text)
-        # Handling Turkish-specific punctuation
         text = self.__normalize_turkish_punctuation(text)
         text = self.__remove_extra_whitespace(text)
         return text
 
-    ### Spanish-specific Preprocessing
     def preprocess_spanish(self, text):
-        # Lowercasing Spanish text
+        """
+        Preprocesses Spanish text with accent normalization
+        and whitespace cleaning.
+
+        Args:
+            text (str): The Spanish text to preprocess.
+
+        Returns:
+            str: The preprocessed Spanish text.
+        """
         text = self.__lowercase_text(text)
-        # Handling Spanish accents
         text = self.__normalize_spanish_accents(text)
-        # Removing extra whitespace
         text = self.__remove_extra_whitespace(text)
         return text
 
-    ### Greek-specific Preprocessing
     def preprocess_greek(self, text):
-        # Lowercasing Greek text
+        """
+        Preprocesses Greek text with accent normalization
+        and whitespace cleaning.
+
+        Args:
+            text (str): The Greek text to preprocess.
+
+        Returns:
+            str: The preprocessed Greek text.
+        """
         text = self.__lowercase_text(text)
-        # Handling Greek accents and punctuation
         text = self.__normalize_greek_accents(text)
         text = self.__remove_extra_whitespace(text)
         return text
 
-    # Utility Functions for All Languages
-    def __process_medical_data(self,data):
-      data = data.replace("."," ")
-      data = data.replace("=", " ")
-      data = data.replace(".."," ")
-      data = data.replace("..."," ")
-      data = data.lower()
-      data = self.__expand_abbreviations(data,abbreviation_dict)
-      data = self.__add_space_between_letters_and_numbers(data)
-      return data
+    def __process_medical_data(self, data):
+        """
+        Processes medical text data by replacing symbols,
+        expanding abbreviations,
+        and adding spaces between letters and numbers.
 
-    def __add_space_between_letters_and_numbers(self,text):
-    # Use regex to insert a space between letters and numbers
-      separated_text = re.sub(r'([a-zA-Z])(\d)', r'\1 \2', text)
-      return separated_text
+        Args:
+            data (str): The medical text to process.
 
-    # Function to expand abbreviations using the dictionary
-    def __expand_abbreviations(self,text, abbreviation_dict):
-        pattern = re.compile(r'\b(' + '|'.join(re.escape(key) for key in abbreviation_dict.keys()) + r')\b')
-        expanded_text = pattern.sub(lambda x: abbreviation_dict[x.group()], text)
-        return expanded_text
+        Returns:
+            str: The processed medical text.
+        """
+        data = data.replace(".", " ")
+        data = data.replace("=", " ")
+        data = data.replace("..", " ")
+        data = data.replace("...", " ")
+        data = data.lower()
+        data = self.__expand_abbreviations(data, abbreviation_dict)
+        data = self.__add_space_between_letters_and_numbers(data)
+        return data
+
+    def __add_space_between_letters_and_numbers(self, text):
+        """
+        Adds spaces between letters and numbers in the text.
+
+        Args:
+            text (str): The input text.
+
+        Returns:
+            str: The text with spaces added between letters and numbers.
+        """
+        return re.sub(r'([a-zA-Z])(\d)', r'\1 \2', text)
+
+    def __expand_abbreviations(self, text, abbreviation_dict):
+        """
+        Expands abbreviations in the text using a dictionary.
+
+        Args:
+            text (str): The text containing abbreviations.
+            abbreviation_dict (dict): The abbreviation-to-expansion mapping.
+
+        Returns:
+            str: The text with expanded abbreviations.
+        """
+        pattern = re.compile(
+                             r'\b(' +
+                             '|'.join(re.escape(key) for key in abbreviation_dict.keys()) +
+                             r')\b'
+                            )
+
+        return pattern.sub(lambda x: abbreviation_dict[x.group()], text)
 
     def __remove_extra_whitespace(self, text):
+        """
+        Removes extra whitespace from the text.
+
+        Args:
+            text (str): The input text.
+
+        Returns:
+            str: The text with extra whitespace removed.
+        """
         return " ".join(text.split())
 
     def __lowercase_text(self, text):
+        """
+        Converts text to lowercase.
+
+        Args:
+            text (str): The input text.
+
+        Returns:
+            str: The lowercase text.
+        """
         return text.lower()
 
-    # Language-Specific Utility Functions
     def __handle_english_contractions(self, text):
-        contractions = {"I'm": "I am", "you're": "you are", "isn't": "is not", "can't": "cannot"}
+        """
+        Expands English contractions in the text.
+
+        Args:
+            text (str): The English text with contractions.
+
+        Returns:
+            str: The text with expanded contractions.
+        """
+        contractions = {"I'm": "I am",
+                        "you're": "you are",
+                        "isn't": "is not",
+                        "can't": "cannot"}
         for contraction, expanded in contractions.items():
             text = text.replace(contraction, expanded)
         return text
 
     def __normalize_french_accents(self, text):
+        """
+        Normalizes French accents in the text.
 
+        Args:
+            text (str): The French text with accents.
+
+        Returns:
+            str: The normalized text.
+        """
         return unicodedata.normalize('NFC', text)
 
     def __normalize_french_punctuation(self, text):
-        # French punctuation often uses non-breaking spaces before : ; ! ?
-        return text.replace(' :', ':').replace(' ;', ';').replace(' ?', '?').replace(' !', '!')
+        """
+        Normalizes French punctuation marks.
+
+        Args:
+            text (str): The French text with punctuation.
+
+        Returns:
+            str: The text with normalized punctuation.
+        """
+        text = text.replace(' :', ':')
+        text = text.replace(' ;', ';')
+        text = text.replace(' ?', '?')
+        text = text.replace(' !', '!')
+        return text
 
     def __normalize_italian_punctuation(self, text):
-        # Italian-specific punctuation normalization if necessary
-        return text.replace("’", "'")  # Replace curly quotes
+        """
+        Normalizes Italian-specific punctuation.
+
+        Args:
+            text (str): The Italian text with punctuation.
+
+        Returns:
+            str: The text with normalized punctuation.
+        """
+        return text.replace("’", "'")
 
     def __lowercase_turkish(self, text):
-        # Turkish lowercase with special handling for dotted/undotted "i"
-        return text.replace('I', 'ı').replace('İ', 'i').lower()
+        """
+        Converts Turkish text to lowercase,
+        handling special Turkish characters.
+
+        Args:
+            text (str): The Turkish text.
+
+        Returns:
+            str: The lowercase Turkish text.
+        """
+        text = text.replace('I', 'ı')
+        text = text.replace('İ', 'i')
+        text = text.lower()
+        return text
 
     def __normalize_turkish_punctuation(self, text):
-        # Turkish-specific punctuation normalization
-        return text.replace("’", "'")  # Replace curly quotes
+        """
+        Normalizes Turkish-specific punctuation.
+
+        Args:
+            text (str): The Turkish text with punctuation.
+
+        Returns:
+            str: The text with normalized punctuation.
+        """
+        return text.replace("’", "'")
 
     def __normalize_spanish_accents(self, text):
-        import unicodedata
+        """
+        Normalizes Spanish accents in the text.
+
+        Args:
+            text (str): The Spanish text with accents.
+
+        Returns:
+            str: The normalized Spanish text.
+        """
         return unicodedata.normalize('NFC', text)
 
     def __normalize_greek_accents(self, text):
-        import unicodedata
+        """
+        Normalizes Greek accents in the text.
+
+        Args:
+            text (str): The Greek text with accents.
+
+        Returns:
+            str: The normalized Greek text.
+        """
         return unicodedata.normalize('NFC', text)
-
-
-
