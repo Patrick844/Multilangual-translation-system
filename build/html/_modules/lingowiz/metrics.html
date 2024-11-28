@@ -1,0 +1,380 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lingowiz.metrics &mdash; LingoWiz  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            LingoWiz
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">LingoWiz</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lingowiz.metrics</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lingowiz.metrics</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Function: translation</span>
+
+<span class="sd">This function generates translations for a specified column in a DataFrame </span>
+<span class="sd">using a fine-tuned MarianMT model.</span>
+
+<span class="sd">Parameters</span>
+<span class="sd">----------</span>
+<span class="sd">df_test : pandas.DataFrame</span>
+<span class="sd">    The DataFrame containing the texts to be translated.</span>
+<span class="sd">model : transformers.MarianMTModel</span>
+<span class="sd">    The fine-tuned MarianMT model used for translation.</span>
+<span class="sd">tokenizer : transformers.MarianTokenizer</span>
+<span class="sd">    The tokenizer corresponding to the MarianMT model.</span>
+<span class="sd">source_column : str</span>
+<span class="sd">    The name of the column in the DataFrame that contains the source texts.</span>
+<span class="sd">batch_size : int, optional</span>
+<span class="sd">    The number of texts to process in each batch (default is 8).</span>
+<span class="sd">max_length : int, optional</span>
+<span class="sd">    The maximum length of input sequences for translation (default is 128).</span>
+<span class="sd">num_beams : int, optional</span>
+<span class="sd">    The number of beams for beam search during inference (default is 2).</span>
+
+<span class="sd">Returns</span>
+<span class="sd">-------</span>
+<span class="sd">list</span>
+<span class="sd">    A list of translated texts.</span>
+
+<span class="sd">Example</span>
+<span class="sd">-------</span>
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    from transformers import MarianTokenizer, MarianMTModel</span>
+<span class="sd">    from lingowiz.metrics import translation</span>
+<span class="sd">    import pandas as pd</span>
+
+<span class="sd">    # Load model and tokenizer</span>
+<span class="sd">    model = MarianMTModel.from_pretrained(&quot;Helsinki-NLP/opus-mt-en-ar&quot;)</span>
+<span class="sd">    tokenizer = MarianTokenizer.from_pretrained(&quot;Helsinki-NLP/opus-mt-en-ar&quot;)</span>
+
+<span class="sd">    # Prepare test data</span>
+<span class="sd">    df_test = pd.DataFrame({&quot;English&quot;: [&quot;Hello world!&quot;, &quot;How are you?&quot;]})</span>
+
+<span class="sd">    # Translate</span>
+<span class="sd">    translations = translation(</span>
+<span class="sd">        df_test=df_test,</span>
+<span class="sd">        model=model,</span>
+<span class="sd">        tokenizer=tokenizer,</span>
+<span class="sd">        source_column=&quot;English&quot;</span>
+<span class="sd">    )</span>
+<span class="sd">    print(translations)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="c1"># Importing Libraries</span>
+<span class="kn">import</span> <span class="nn">evaluate</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">mlflow</span>
+
+
+<div class="viewcode-block" id="translation">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.metrics.translation">[docs]</a>
+<span class="k">def</span> <span class="nf">translation</span><span class="p">(</span><span class="n">df_test</span><span class="p">,</span>
+                <span class="n">model</span><span class="p">,</span>
+                <span class="n">tokenizer</span><span class="p">,</span>
+                <span class="n">source_column</span><span class="p">,</span>
+                <span class="n">batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span>
+                <span class="n">max_length</span><span class="o">=</span><span class="mi">128</span><span class="p">,</span>
+                <span class="n">num_beams</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to load a fine-tuned MarianMT model and perform translation on</span>
+<span class="sd">    a DataFrame column using Swifter for parallel processing.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    - df_test: DataFrame containing the texts to be translated.</span>
+<span class="sd">    - model: The fine-tuned MarianMT model.</span>
+<span class="sd">    - tokenizer: The tokenizer for the model.</span>
+<span class="sd">    - source_column: The name of the column in the DataFrame that contains the text in the source language.</span>
+<span class="sd">    - batch_size: Number of texts to process in each batch (default is 8).</span>
+<span class="sd">    - max_length: The maximum length of input sequences for translation (default is 128).</span>
+<span class="sd">    - num_beams: The number of beams for beam search during inference (default is 2).</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">    - translated_texts: A list of translated texts.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">empty_cache</span><span class="p">()</span>
+    <span class="c1"># Detect if a GPU is available and set the device accordingly</span>
+    <span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">device</span><span class="p">(</span><span class="s2">&quot;cuda&quot;</span> <span class="k">if</span> <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s2">&quot;cpu&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Move the model to the appropriate device</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+    <span class="c1"># Define a translation function for Swifter</span>
+    <span class="k">def</span> <span class="nf">translate_text</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+        <span class="c1"># Tokenize the input text and move to the appropriate device</span>
+        <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">,</span>
+                           <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">,</span>
+                           <span class="n">padding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                           <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                           <span class="n">max_length</span><span class="o">=</span><span class="n">max_length</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+        <span class="c1"># Perform translation (inference)</span>
+        <span class="n">translated_tokens</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span> <span class="n">num_beams</span><span class="o">=</span><span class="n">num_beams</span><span class="p">)</span>
+
+        <span class="c1"># Decode the generated tokens to human-readable text</span>
+        <span class="n">translation</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">translated_tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                       <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">translation</span>
+
+    <span class="c1"># Apply Swifter to process the source_column with parallelization</span>
+    <span class="n">translated_texts</span> <span class="o">=</span> <span class="n">df_test</span><span class="p">[</span><span class="n">source_column</span><span class="p">]</span><span class="o">.</span><span class="n">swifter</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="n">translate_text</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">translated_texts</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span></div>
+
+
+
+<div class="viewcode-block" id="metric_compute">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.metrics.metric_compute">[docs]</a>
+<span class="k">def</span> <span class="nf">metric_compute</span><span class="p">(</span><span class="n">predicted_texts</span><span class="p">,</span> <span class="n">df_test</span><span class="p">,</span> <span class="n">metric</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Evaluates the model predictions using BLEU, chrF, and BERTScore metrics.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    df_test : pd.DataFrame</span>
+<span class="sd">        A DataFrame containing the test data, including reference translations.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        This function does not return any value. It computes and prints the</span>
+<span class="sd">        metrics for BLEU, chrF, and BERTScore.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The computed metrics are displayed in the console for review.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">torch</span><span class="o">.</span><span class="n">cuda</span><span class="o">.</span><span class="n">empty_cache</span><span class="p">()</span>
+    <span class="c1"># Convert the list of predicted texts to a NumPy array and flatten it</span>
+    <span class="c1"># (to ensure proper shape)</span>
+    <span class="n">predictions</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">predicted_texts</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
+
+    <span class="c1"># Extract the reference outputs</span>
+    <span class="c1"># from the specified DataFrame column using Swifter</span>
+    <span class="n">reference</span> <span class="o">=</span> <span class="n">df_test</span><span class="p">[</span><span class="s2">&quot;Arabic&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">swifter</span><span class="o">.</span><span class="n">apply</span><span class="p">(</span><span class="k">lambda</span> <span class="n">text</span><span class="p">:</span> <span class="n">text</span><span class="p">[</span><span class="mi">8</span><span class="p">:])</span>
+
+    <span class="c1"># Convert the list of processed reference texts back</span>
+    <span class="c1"># to a NumPy array for further computation</span>
+    <span class="n">reference</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">reference</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">reference</span><span class="p">),</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="c1"># Load the specified evaluation metric</span>
+    <span class="c1"># from the Hugging Face `evaluate` library</span>
+    <span class="n">evaluator</span> <span class="o">=</span> <span class="n">evaluate</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">metric</span><span class="p">)</span>
+
+    <span class="c1"># Compute the metric by comparing predictions to references</span>
+    <span class="c1"># If the metric is &#39;bertscore&#39;,</span>
+    <span class="c1"># additional arguments (e.g., language) may be needed</span>
+    <span class="k">if</span> <span class="n">metric</span> <span class="o">==</span> <span class="s2">&quot;bertscore&quot;</span><span class="p">:</span>
+        <span class="n">metric_result</span> <span class="o">=</span> <span class="n">evaluator</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span>
+                                          <span class="n">references</span><span class="o">=</span><span class="n">reference</span><span class="p">,</span>
+                                          <span class="n">lang</span><span class="o">=</span><span class="s2">&quot;en&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">metric_result</span> <span class="o">=</span> <span class="n">evaluator</span><span class="o">.</span><span class="n">compute</span><span class="p">(</span><span class="n">predictions</span><span class="o">=</span><span class="n">predictions</span><span class="p">,</span>
+                                          <span class="n">references</span><span class="o">=</span><span class="n">reference</span><span class="p">)</span>
+
+    <span class="c1"># Return the computed metric result and related statistics</span>
+    <span class="k">return</span> <span class="n">metric_result</span></div>
+
+
+
+<div class="viewcode-block" id="mlflow_logging">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.metrics.mlflow_logging">[docs]</a>
+<span class="k">def</span> <span class="nf">mlflow_logging</span><span class="p">(</span><span class="n">source_language</span><span class="p">,</span>
+                   <span class="n">target_language</span><span class="p">,</span>
+                   <span class="n">metric_bleu</span><span class="p">,</span>
+                   <span class="n">metric_chrf</span><span class="p">,</span>
+                   <span class="n">metric_bert</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Logs translation evaluation metrics (BLEU, CHRF, and BERT scores) to an MLflow experiment.</span>
+
+<span class="sd">    This function creates or retrieves an MLflow experiment specific to a source-target language pair,</span>
+<span class="sd">    and logs the provided evaluation metrics. If the experiment already exists, the metrics are appended</span>
+<span class="sd">    to the latest run; otherwise, a new experiment and run are created.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    source_language : str</span>
+<span class="sd">        The ISO 639-1 code or name of the source language.</span>
+<span class="sd">    target_language : str</span>
+<span class="sd">        The ISO 639-1 code or name of the target language.</span>
+<span class="sd">    metric_bleu : float</span>
+<span class="sd">        The BLEU score for the translation quality.</span>
+<span class="sd">    metric_chrf : float</span>
+<span class="sd">        The CHRF score for the translation quality.</span>
+<span class="sd">    metric_bert : float</span>
+<span class="sd">        The BERT score for the semantic similarity.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    None</span>
+<span class="sd">        This function does not return a value. It logs data directly to MLflow.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    - If an MLflow experiment for the given source-target language pair does not exist, a new experiment is created automatically.</span>
+<span class="sd">    - Metrics are logged as parameters in the current or newly created MLflow run.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+
+    <span class="n">experiment_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;translator_</span><span class="si">{</span><span class="n">source_language</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">target_language</span><span class="si">}</span><span class="s2">_spec&quot;</span>
+    <span class="n">experiment</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">get_experiment_by_name</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">experiment_name</span><span class="p">)</span>
+    <span class="n">runs</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">experiment</span><span class="p">:</span>
+        <span class="n">runs</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">search_runs</span><span class="p">(</span><span class="n">experiment_names</span><span class="o">=</span><span class="p">[</span><span class="n">experiment_name</span><span class="p">])</span>
+        <span class="n">run_id</span> <span class="o">=</span> <span class="n">runs</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">set_experiment</span><span class="p">(</span><span class="n">experiment_name</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">set_experiment</span><span class="p">(</span><span class="n">experiment_name</span><span class="p">)</span>
+        <span class="n">run_id</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># Start the MLflow run</span>
+    <span class="k">with</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">start_run</span><span class="p">(</span><span class="n">run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span> <span class="n">nested</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_param</span><span class="p">(</span><span class="s2">&quot;BLEU score&quot;</span><span class="p">,</span> <span class="n">metric_bleu</span><span class="p">)</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_param</span><span class="p">(</span><span class="s2">&quot;CHRF score&quot;</span><span class="p">,</span> <span class="n">metric_chrf</span><span class="p">)</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_param</span><span class="p">(</span><span class="s2">&quot;BERT score&quot;</span><span class="p">,</span> <span class="n">metric_bert</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="evaluation">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.metrics.evaluation">[docs]</a>
+<span class="k">def</span> <span class="nf">evaluation</span><span class="p">(</span><span class="n">df_test</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">source</span><span class="p">,</span> <span class="n">target</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Evaluate the model predictions using BLEU, chrF, and BERTScore metrics.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">    - df_test: DataFrame containing the test data, including reference translations.</span>
+
+<span class="sd">    This function prints the computed metrics for BLEU, chrF, and BERTScore.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Generate predicted translations using the model</span>
+    <span class="n">predicted_texts</span> <span class="o">=</span> <span class="n">translation</span><span class="p">(</span><span class="n">df_test</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">tokenizer</span><span class="p">,</span> <span class="n">source</span><span class="p">)</span>
+
+    <span class="c1"># Compute the BLEU metric</span>
+    <span class="n">metric_bleu</span> <span class="o">=</span> <span class="n">metric_compute</span><span class="p">(</span><span class="n">predicted_texts</span><span class="p">,</span> <span class="n">df_test</span><span class="p">,</span> <span class="s2">&quot;bleu&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Compute the chrF metric</span>
+    <span class="n">metric_chrf</span> <span class="o">=</span> <span class="n">metric_compute</span><span class="p">(</span><span class="n">predicted_texts</span><span class="p">,</span> <span class="n">df_test</span><span class="p">,</span> <span class="s2">&quot;chrf&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Compute the BERTScore metric</span>
+    <span class="n">metric_bert</span> <span class="o">=</span> <span class="n">metric_compute</span><span class="p">(</span><span class="n">predicted_texts</span><span class="p">,</span> <span class="n">df_test</span><span class="p">,</span> <span class="s2">&quot;bertscore&quot;</span><span class="p">)</span>
+
+    <span class="n">metric_bert</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">metric_bert</span><span class="p">[</span><span class="s1">&#39;precision&#39;</span><span class="p">])</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">metric_bert</span><span class="p">[</span><span class="s1">&#39;precision&#39;</span><span class="p">])</span>
+
+    <span class="n">mlflow_logging</span><span class="p">(</span><span class="n">source</span><span class="p">,</span>
+                   <span class="n">target</span><span class="p">,</span>
+                   <span class="n">metric_bleu</span><span class="p">,</span>
+                   <span class="n">metric_chrf</span><span class="p">,</span>
+                   <span class="n">metric_bert</span><span class="p">)</span>
+
+    <span class="c1"># Print BLEU score</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">--- BLEU Metric ---&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;BLEU Score: </span><span class="si">{</span><span class="n">metric_bleu</span><span class="p">[</span><span class="s1">&#39;bleu&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Precision: </span><span class="si">{</span><span class="n">metric_bleu</span><span class="p">[</span><span class="s1">&#39;precisions&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Brevity Penalty: </span><span class="si">{</span><span class="n">metric_bleu</span><span class="p">[</span><span class="s1">&#39;brevity_penalty&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Print chrF metric</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">--- chrF Metric ---&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;chrF Score: </span><span class="si">{</span><span class="n">metric_chrf</span><span class="p">[</span><span class="s1">&#39;score&#39;</span><span class="p">]</span><span class="si">:</span><span class="s2">.4f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="c1"># Print BERTScore metric</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">--- BERTScore Metric ---&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">metric_bert</span><span class="p">)</span>
+
+    <span class="c1"># Optionally, print the predicted texts</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">--- Sample Predicted Texts ---&quot;</span><span class="p">)</span>
+    <span class="c1"># Print first 5 predicted texts as a sample</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">prediction</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">predicted_texts</span><span class="p">[:</span><span class="mi">5</span><span class="p">]):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Prediction </span><span class="si">{</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">prediction</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Patrick Saadde.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

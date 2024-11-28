@@ -1,0 +1,785 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="../../">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>lingowiz.inference &mdash; LingoWiz  documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="../../_static/jquery.js?v=5d32c60e"></script>
+      <script src="../../_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="../../_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="../../_static/doctools.js?v=9bcbadda"></script>
+      <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            LingoWiz
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../lingowiz.html">lingowiz package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../modules.html">lingowiz</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">LingoWiz</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">lingowiz.inference</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for lingowiz.inference</h1><div class="highlight"><pre>
+<span></span>
+
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">Module Name: inference_pipeline.py</span>
+
+<span class="sd">This module provides a complete pipeline for processing, translating, and evaluating</span>
+<span class="sd">text in multiple languages using fine-tuned MarianMT models. It includes utilities for</span>
+<span class="sd">language detection, preprocessing, translation, confidence computation, grammar error</span>
+<span class="sd">analysis, and logging results to MLflow.</span>
+
+<span class="sd">Features:</span>
+<span class="sd">---------</span>
+<span class="sd">- **Language Detection**: Automatically detect the language of the input text using FastText.</span>
+<span class="sd">- **Preprocessing**: Clean and preprocess text for specific languages before translation.</span>
+<span class="sd">- **Translation**: Perform direct or indirect translation using MarianMT models and tokenizers.</span>
+<span class="sd">- **Confidence Calculation**: Compute confidence scores for generated translations.</span>
+<span class="sd">- **Grammar Checking**: Evaluate translations using grammar error analysis with LanguageTool.</span>
+<span class="sd">- **MLflow Logging**: Log translation results, ratings, and metadata to MLflow experiments.</span>
+<span class="sd">- **Chunking**: Handle large text by splitting it into manageable chunks for translation.</span>
+
+<span class="sd">Dependencies:</span>
+<span class="sd">-------------</span>
+<span class="sd">- ``transformers``: For MarianMT models and tokenizers.</span>
+<span class="sd">- ``fasttext``: For language detection.</span>
+<span class="sd">- ``language_tool_python``: For grammar error checking.</span>
+<span class="sd">- ``mlflow``: For logging translations and metadata.</span>
+<span class="sd">- ``huggingface_hub``: For downloading models.</span>
+<span class="sd">- ``torch``: For confidence computation.</span>
+<span class="sd">- ``tqdm``: For progress bars during processing.</span>
+
+<span class="sd">Usage Example:</span>
+<span class="sd">--------------</span>
+<span class="sd">.. code-block:: python</span>
+
+<span class="sd">    from inference_pipeline import inference</span>
+
+<span class="sd">    text = &quot;Bonjour tout le monde!&quot;</span>
+<span class="sd">    translation, source_languages, ratings = inference(text)</span>
+
+<span class="sd">    print(f&quot;Translation: {translation}&quot;)</span>
+<span class="sd">    print(f&quot;Source Languages: {source_languages}&quot;)</span>
+<span class="sd">    print(f&quot;Ratings: {ratings}&quot;)</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">from</span> <span class="nn">tqdm</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">from</span> <span class="nn">transformers</span> <span class="kn">import</span> <span class="n">MarianTokenizer</span><span class="p">,</span> <span class="n">MarianMTModel</span>
+<span class="kn">from</span> <span class="nn">huggingface_hub</span> <span class="kn">import</span> <span class="n">hf_hub_download</span>
+<span class="kn">import</span> <span class="nn">fasttext</span>
+<span class="kn">from</span> <span class="nn">dotenv</span> <span class="kn">import</span> <span class="n">load_dotenv</span>
+<span class="kn">import</span> <span class="nn">langcodes</span>
+<span class="kn">import</span> <span class="nn">language_tool_python</span>
+<span class="kn">import</span> <span class="nn">mlflow</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">from</span> <span class="nn">lingowiz.utils</span> <span class="kn">import</span> <span class="n">model_dict</span>
+<span class="kn">from</span> <span class="nn">lingowiz.inference_preprocessing</span> <span class="kn">import</span> <span class="n">TextPreprocessor</span>
+<span class="n">indirect_translation_language</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;ron&quot;</span><span class="p">]</span>
+
+<span class="c1"># Suppress all UserWarnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">,</span> <span class="n">category</span><span class="o">=</span><span class="ne">UserWarning</span><span class="p">)</span>
+
+<span class="c1"># Load languages tool</span>
+<span class="n">tools</span> <span class="o">=</span> <span class="p">[</span><span class="n">language_tool_python</span><span class="o">.</span><span class="n">LanguageTool</span><span class="p">(</span><span class="s1">&#39;en&#39;</span><span class="p">),</span>
+         <span class="n">language_tool_python</span><span class="o">.</span><span class="n">LanguageTool</span><span class="p">(</span><span class="s1">&#39;ar&#39;</span><span class="p">)]</span>
+
+<span class="c1"># Environment Variables</span>
+<span class="n">token</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">getenv</span><span class="p">(</span><span class="s1">&#39;HF_TOKEN&#39;</span><span class="p">)</span>
+
+<span class="c1"># Initialize</span>
+<span class="n">tqdm</span><span class="o">.</span><span class="n">pandas</span><span class="p">()</span>
+<span class="n">load_dotenv</span><span class="p">()</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Loading the FastText language detection model...&quot;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="detect_language">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference.detect_language">[docs]</a>
+<span class="k">def</span> <span class="nf">detect_language</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Detects the language of the input text using a FastText model.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        text (str): The input text to analyze.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        str: ISO 639-1 language code for the detected language.</span>
+<span class="sd">             Defaults to &#39;eng&#39; if the language is not recognized.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;FastText model loaded.&quot;</span><span class="p">)</span>
+    <span class="n">repo_id</span> <span class="o">=</span> <span class="s2">&quot;facebook/fasttext-language-identification&quot;</span>
+    <span class="n">model_path</span> <span class="o">=</span> <span class="n">hf_hub_download</span><span class="p">(</span><span class="n">repo_id</span><span class="o">=</span><span class="n">repo_id</span><span class="p">,</span> <span class="n">filename</span><span class="o">=</span><span class="s2">&quot;model.bin&quot;</span><span class="p">)</span>
+    <span class="n">fasttext_model</span> <span class="o">=</span> <span class="n">fasttext</span><span class="o">.</span><span class="n">load_model</span><span class="p">(</span><span class="n">model_path</span><span class="p">)</span>
+    <span class="c1"># Detect the language for both columns</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">sub</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;[^A-Za-z0-9 ]+&#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="n">fasttext_model</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">text</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="n">code</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;__label__&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="n">code</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;_&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># If code not found, default is english</span>
+    <span class="k">if</span> <span class="n">code</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">model_dict</span><span class="o">.</span><span class="n">keys</span><span class="p">()):</span>
+        <span class="k">pass</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">code</span> <span class="o">=</span> <span class="s2">&quot;eng&quot;</span>
+
+    <span class="c1"># Return both language codes (English, Arabic)</span>
+    <span class="k">return</span> <span class="n">code</span></div>
+
+
+
+<div class="viewcode-block" id="processing">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference.processing">[docs]</a>
+<span class="k">def</span> <span class="nf">processing</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">code</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      Preprocesses the text based on the detected language and retrieves</span>
+<span class="sd">      the appropriate model configuration.</span>
+
+<span class="sd">      Args:</span>
+<span class="sd">          text (str): The input text to preprocess.</span>
+<span class="sd">          code (str): The ISO 639-1 code of the detected language.</span>
+
+<span class="sd">      Returns:</span>
+<span class="sd">          tuple: A tuple containing:</span>
+<span class="sd">              - str: Preprocessed text.</span>
+<span class="sd">              - dict: Model configuration for translation.</span>
+<span class="sd">      &quot;&quot;&quot;</span>
+    <span class="n">processeur</span> <span class="o">=</span> <span class="n">TextPreprocessor</span><span class="p">(</span><span class="n">code</span><span class="p">)</span>
+    <span class="n">text</span> <span class="o">=</span> <span class="n">processeur</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Finding Model ...&quot;</span><span class="p">)</span>
+    <span class="n">model_config</span> <span class="o">=</span> <span class="n">model_dict</span><span class="p">[</span><span class="n">code</span><span class="p">]</span>
+    <span class="k">return</span> <span class="n">text</span><span class="p">,</span> <span class="n">model_config</span></div>
+
+
+
+<div class="viewcode-block" id="compute_confidence">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference.compute_confidence">[docs]</a>
+<span class="k">def</span> <span class="nf">compute_confidence</span><span class="p">(</span><span class="n">scores</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      Computes the confidence score for a translation</span>
+<span class="sd">      based on model output scores.</span>
+
+<span class="sd">      Args:</span>
+<span class="sd">          scores (list): List of token logits from the model output.</span>
+
+<span class="sd">      Returns:</span>
+<span class="sd">          float: Average confidence score (0.0 to 1.0).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">total_confidence</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">step_logits</span> <span class="ow">in</span> <span class="n">scores</span><span class="p">:</span>
+        <span class="c1"># Convert logits to probabilities</span>
+        <span class="n">probabilities</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">step_logits</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Get the max probability for each token</span>
+        <span class="n">max_prob</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">probabilities</span><span class="p">,</span> <span class="n">dim</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="c1"># Average max probability per step</span>
+        <span class="n">total_confidence</span> <span class="o">+=</span> <span class="n">torch</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">max_prob</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+
+    <span class="c1"># Normalize confidence score</span>
+    <span class="n">avg_confidence</span> <span class="o">=</span> <span class="n">total_confidence</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Confidence Score: </span><span class="si">{</span><span class="n">avg_confidence</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">avg_confidence</span></div>
+
+
+
+<div class="viewcode-block" id="compute_rating">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference.compute_rating">[docs]</a>
+<span class="k">def</span> <span class="nf">compute_rating</span><span class="p">(</span><span class="n">tool</span><span class="p">,</span> <span class="n">translated_text</span><span class="p">,</span> <span class="n">total_confidence</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Computes a rating for the translated text based on</span>
+<span class="sd">    grammar errors and model confidence.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tool (LanguageTool): The grammar checker tool.</span>
+<span class="sd">        translated_text (str): The text to evaluate.</span>
+<span class="sd">        total_confidence (float): Confidence score from the translation model.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        float: A rating between 0 and 10 for the translation quality.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Checking Error ...&quot;</span><span class="p">)</span>
+
+    <span class="n">matches</span> <span class="o">=</span> <span class="n">tool</span><span class="o">.</span><span class="n">check</span><span class="p">(</span><span class="n">translated_text</span><span class="p">)</span>
+    <span class="n">number_errors</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">matches</span><span class="p">)</span>
+
+    <span class="n">length_sentence</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">translated_text</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+    <span class="k">if</span> <span class="n">length_sentence</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;The translated text is empty!&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">0</span>  <span class="c1"># Return a default rating if text is empty</span>
+
+    <span class="c1"># Calculate error rate</span>
+    <span class="n">grammar_error_rate</span> <span class="o">=</span> <span class="n">number_errors</span> <span class="o">/</span> <span class="n">length_sentence</span>
+
+    <span class="c1"># Lack of confidence is penalized (1 - confidence)</span>
+    <span class="n">no_confidence</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">total_confidence</span>
+
+    <span class="c1"># Combine both penalties: grammar error rate and lack of confidence</span>
+    <span class="n">rating</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="p">(</span><span class="n">grammar_error_rate</span> <span class="o">+</span> <span class="n">no_confidence</span><span class="p">)</span>
+
+    <span class="c1"># Ensure rating is between 0 and 1</span>
+    <span class="n">rating</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">min</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">rating</span><span class="p">))</span>
+
+    <span class="c1"># Optional: Scale the rating to 0–10 for readability</span>
+    <span class="n">rating_scaled</span> <span class="o">=</span> <span class="n">rating</span> <span class="o">*</span> <span class="mi">10</span>  <span class="c1"># For a scale of 0 to 10</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Number of Errors: </span><span class="si">{</span><span class="n">number_errors</span><span class="si">}</span><span class="s2"> &quot;</span>
+          <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Sentence Length: </span><span class="si">{</span><span class="n">length_sentence</span><span class="si">}</span><span class="s2"> &quot;</span>
+          <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">Rating: </span><span class="si">{</span><span class="n">rating_scaled</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">rating_scaled</span></div>
+
+
+
+<div class="viewcode-block" id="mlflow_logging">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference.mlflow_logging">[docs]</a>
+<span class="k">def</span> <span class="nf">mlflow_logging</span><span class="p">(</span><span class="n">source_language</span><span class="p">,</span>
+                   <span class="n">target_language</span><span class="p">,</span>
+                   <span class="n">original</span><span class="p">,</span>
+                   <span class="n">translation</span><span class="p">,</span>
+                   <span class="n">rating</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      Logs translation results and metadata to an MLflow experiment.</span>
+
+<span class="sd">      Args:</span>
+<span class="sd">          source_language (str): The language of the original text.</span>
+<span class="sd">          target_language (str): The language of the translation.</span>
+<span class="sd">          original (str): The original input text.</span>
+<span class="sd">          translation (str): The translated text.</span>
+<span class="sd">          rating (float): Quality rating for the translation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">experiment_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;translator_</span><span class="si">{</span><span class="n">source_language</span><span class="si">}</span><span class="s2">_</span><span class="si">{</span><span class="n">target_language</span><span class="si">}</span><span class="s2">_spec&quot;</span>
+    <span class="n">experiment</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">get_experiment_by_name</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">experiment_name</span><span class="p">)</span>
+    <span class="n">runs</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="n">experiment</span><span class="p">:</span>
+        <span class="n">runs</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">search_runs</span><span class="p">(</span><span class="n">experiment_names</span><span class="o">=</span><span class="p">[</span><span class="n">experiment_name</span><span class="p">])</span>
+        <span class="n">run_id</span> <span class="o">=</span> <span class="n">runs</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">set_experiment</span><span class="p">(</span><span class="n">experiment_name</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">set_experiment</span><span class="p">(</span><span class="n">experiment_name</span><span class="p">)</span>
+        <span class="n">run_id</span> <span class="o">=</span> <span class="kc">None</span>
+
+    <span class="c1"># New data to be added</span>
+    <span class="n">new_data</span> <span class="o">=</span> <span class="p">[{</span><span class="s2">&quot;Original&quot;</span><span class="p">:</span> <span class="n">original</span><span class="p">,</span>
+                 <span class="s2">&quot;Translation&quot;</span><span class="p">:</span> <span class="n">translation</span><span class="p">,</span>
+                 <span class="s2">&quot;Source&quot;</span><span class="p">:</span> <span class="n">source_language</span><span class="p">,</span>
+                 <span class="s1">&#39;Rating&#39;</span><span class="p">:</span> <span class="n">rating</span><span class="p">}]</span>
+
+    <span class="c1"># Start the MLflow run</span>
+    <span class="k">with</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">start_run</span><span class="p">(</span><span class="n">run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">,</span> <span class="n">nested</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+        <span class="c1"># List artifacts for the given run_id</span>
+        <span class="n">artifacts</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">artifacts</span><span class="o">.</span><span class="n">list_artifacts</span><span class="p">(</span><span class="n">run_id</span><span class="o">=</span><span class="n">run_id</span><span class="p">)</span>
+
+        <span class="c1"># Check if &#39;inference_data&#39; is already logged</span>
+        <span class="n">artifact_names</span> <span class="o">=</span> <span class="p">[</span><span class="n">artifact</span><span class="o">.</span><span class="n">path</span> <span class="k">for</span> <span class="n">artifact</span> <span class="ow">in</span> <span class="n">artifacts</span><span class="p">]</span>
+        <span class="c1"># Adjust this path if the artifact was stored in a subdirectory</span>
+        <span class="n">artifact_path</span> <span class="o">=</span> <span class="s2">&quot;inference_data.csv&quot;</span>
+
+        <span class="k">if</span> <span class="n">artifact_path</span> <span class="ow">in</span> <span class="n">artifact_names</span><span class="p">:</span>
+
+            <span class="c1"># Load Existing Atrifact</span>
+            <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;artifact_path&quot;</span><span class="p">:</span> <span class="n">artifact_path</span><span class="p">,</span>
+                      <span class="s2">&quot;run_id&quot;</span><span class="p">:</span> <span class="n">run_id</span><span class="p">}</span>
+
+            <span class="n">local_artifact_path</span> <span class="o">=</span> <span class="n">mlflow</span><span class="o">.</span><span class="n">artifacts</span><span class="o">.</span><span class="n">download_artifacts</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">)</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">local_artifact_path</span><span class="p">)</span>
+
+            <span class="c1"># Add new data to existing inference data</span>
+            <span class="n">new_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">new_data</span><span class="p">)</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">concat</span><span class="p">([</span><span class="n">df</span><span class="p">,</span> <span class="n">new_df</span><span class="p">])</span>
+
+            <span class="c1"># Log new inference data on mlflow</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Addindg data to inference_data.csv&quot;</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Define the data for the DataFrame</span>
+            <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">new_data</span><span class="p">)</span>
+
+            <span class="c1"># Log the CSV file as an artifact</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Creating new DF and logging as artifact&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Save the DataFrame to a CSV file</span>
+        <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s2">&quot;inference_data.csv&quot;</span><span class="p">,</span> <span class="n">index</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="n">mlflow</span><span class="o">.</span><span class="n">log_artifact</span><span class="p">(</span><span class="s2">&quot;inference_data.csv&quot;</span><span class="p">)</span></div>
+
+
+
+<div class="viewcode-block" id="generating_translation">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference.generating_translation">[docs]</a>
+<span class="k">def</span> <span class="nf">generating_translation</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span>
+                           <span class="n">model</span><span class="p">,</span>
+                           <span class="n">data</span><span class="p">,</span>
+                           <span class="n">num_beams</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+                           <span class="n">max_length</span><span class="o">=</span><span class="mi">512</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Generates translations for the input text using a MarianMT model.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tokenizer (MarianTokenizer): The tokenizer for the MarianMT model.</span>
+<span class="sd">        model (MarianMTModel): The MarianMT model for translation.</span>
+<span class="sd">        data (str): The input text to translate.</span>
+<span class="sd">        num_beams (int, optional): Number of beams. Defaults to 5.</span>
+<span class="sd">        max_length (int, optional): Max sequence length. Defaults to 512.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple: A tuple containing:</span>
+<span class="sd">            - str: The translated text.</span>
+<span class="sd">            - float: Confidence score for the translation.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Tokenize data (tansform text into number,</span>
+    <span class="c1"># same transformation as training)</span>
+    <span class="n">inputs</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="p">(</span><span class="n">data</span><span class="p">,</span>
+                       <span class="n">return_tensors</span><span class="o">=</span><span class="s2">&quot;pt&quot;</span><span class="p">,</span>
+                       <span class="n">padding</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                       <span class="n">truncation</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                       <span class="n">max_length</span><span class="o">=</span><span class="n">max_length</span><span class="p">)</span>
+
+    <span class="c1"># Perform translation (inference)</span>
+    <span class="n">translated_tokens</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">generate</span><span class="p">(</span><span class="o">**</span><span class="n">inputs</span><span class="p">,</span>
+                                       <span class="n">num_beams</span><span class="o">=</span><span class="n">num_beams</span><span class="p">,</span>
+                                       <span class="n">max_length</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+                                       <span class="n">no_repeat_ngram_size</span><span class="o">=</span><span class="mi">3</span><span class="p">,</span>
+                                       <span class="n">return_dict_in_generate</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                                       <span class="n">output_scores</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">scores</span> <span class="o">=</span> <span class="n">translated_tokens</span><span class="o">.</span><span class="n">scores</span>
+    <span class="n">confidence</span> <span class="o">=</span> <span class="n">compute_confidence</span><span class="p">(</span><span class="n">scores</span><span class="p">)</span>
+    <span class="n">translated_tokens</span> <span class="o">=</span> <span class="n">translated_tokens</span><span class="o">.</span><span class="n">sequences</span>
+
+    <span class="c1"># Decode the generated tokens to human-readable text</span>
+    <span class="n">translated_text</span> <span class="o">=</span> <span class="n">tokenizer</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">translated_tokens</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+                                       <span class="n">skip_special_tokens</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">translated_text</span><span class="p">,</span> <span class="n">confidence</span></div>
+
+
+
+<div class="viewcode-block" id="initializing_model">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference.initializing_model">[docs]</a>
+<span class="k">def</span> <span class="nf">initializing_model</span><span class="p">(</span><span class="n">model_name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      Initializes and loads a MarianMT model.</span>
+
+<span class="sd">      Args:</span>
+<span class="sd">          model_name (str): The name or path of the MarianMT model.</span>
+
+<span class="sd">      Returns:</span>
+<span class="sd">          MarianMTModel: The loaded MarianMT model.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">MarianMTModel</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">model_name</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">model</span></div>
+
+
+
+<div class="viewcode-block" id="initializing_tokenizer">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference.initializing_tokenizer">[docs]</a>
+<span class="k">def</span> <span class="nf">initializing_tokenizer</span><span class="p">(</span><span class="n">tokenizer_name</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Initializes and loads a MarianMT tokenizer.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        tokenizer_name (str): The name or path of the MarianMT tokenizer.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        MarianTokenizer: The loaded tokenizer.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">MarianTokenizer</span><span class="o">.</span><span class="n">from_pretrained</span><span class="p">(</span><span class="n">tokenizer_name</span><span class="p">,</span> <span class="n">token</span><span class="o">=</span><span class="n">token</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">tokenizer</span></div>
+
+
+
+<div class="viewcode-block" id="indirect_translation">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference.indirect_translation">[docs]</a>
+<span class="k">def</span> <span class="nf">indirect_translation</span><span class="p">(</span><span class="n">data</span><span class="p">,</span>
+                         <span class="n">model_config</span><span class="p">,</span>
+                         <span class="n">translation_list</span><span class="p">,</span>
+                         <span class="n">confidence_list</span><span class="p">,</span>
+                         <span class="n">max_length</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+                         <span class="n">num_beams</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Performs indirect translation via an intermediate language</span>
+<span class="sd">    (e.g., Romanian to English to Arabic).</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (str): The input text for translation.</span>
+<span class="sd">        model_config (dict): Model and Tokenizer config.</span>
+<span class="sd">        translation_list (list): List to store translations.</span>
+<span class="sd">        confidence_list (list): List to store confidence scores.</span>
+<span class="sd">        max_length (int, optional): Max sequence length. Defaults to 512.</span>
+<span class="sd">        num_beams (int, optional): Number of beams. Defaults to 5.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple:</span>
+<span class="sd">          - Updated translation list</span>
+<span class="sd">          - Updated confidence list.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Indirect ...&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">translation_list</span><span class="p">,</span> <span class="n">confidence_en</span> <span class="o">=</span> <span class="n">direct_translation</span><span class="p">(</span><span class="n">data</span><span class="p">,</span>
+                                                         <span class="n">model_config</span><span class="p">,</span>
+                                                         <span class="n">translation_list</span><span class="p">,</span>
+                                                         <span class="n">confidence_list</span><span class="p">)</span>
+
+    <span class="c1"># Initialize additional model and tokenizer (English - Arabic)</span>
+    <span class="n">tokenizer_ar</span> <span class="o">=</span> <span class="n">initializing_tokenizer</span><span class="p">(</span><span class="n">model_config</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+    <span class="n">model_ar</span> <span class="o">=</span> <span class="n">initializing_model</span><span class="p">(</span><span class="n">model_config</span><span class="p">[</span><span class="mi">3</span><span class="p">])</span>
+
+    <span class="n">translated_text</span><span class="p">,</span> <span class="n">confidence_ar</span> <span class="o">=</span> <span class="n">generating_translation</span><span class="p">(</span><span class="n">tokenizer_ar</span><span class="p">,</span>
+                                                            <span class="n">model_ar</span><span class="p">,</span>
+                                                            <span class="n">translation_list</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">confidence_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">confidence_ar</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">translation_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+        <span class="n">translation_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">translated_text</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">translation_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">translation_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">translated_text</span>
+
+    <span class="k">return</span> <span class="n">translation_list</span><span class="p">,</span> <span class="n">confidence_list</span></div>
+
+
+
+<div class="viewcode-block" id="direct_translation">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference.direct_translation">[docs]</a>
+<span class="k">def</span> <span class="nf">direct_translation</span><span class="p">(</span><span class="n">data</span><span class="p">,</span>
+                       <span class="n">model_config</span><span class="p">,</span>
+                       <span class="n">translation_list</span><span class="p">,</span>
+                       <span class="n">confidence_list</span><span class="p">,</span>
+                       <span class="n">max_length</span><span class="o">=</span><span class="mi">512</span><span class="p">,</span>
+                       <span class="n">num_beams</span><span class="o">=</span><span class="mi">5</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Function to load a fine-tuned MarianMT model</span>
+<span class="sd">    and perform translation on a DataFrame column with a progress bar.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        data (DataFrame): DataFrame containing the texts to be translated.</span>
+<span class="sd">        model_name (list): List of Model and Tokenizer for specific language</span>
+<span class="sd">        source_column (str): The name of the column in the DataFrame containing</span>
+<span class="sd">            the text in the source language.</span>
+<span class="sd">        max_length (int): Maximum length of input sequences. Defaults to 128.</span>
+<span class="sd">        num_beams (int): Number of beams for beam search. Defaults to 3.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        tuple:</span>
+<span class="sd">          - Updated translation list</span>
+<span class="sd">          - Updated confidence list.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Load the tokenizer and the fine-tuned model</span>
+    <span class="n">tokenizer</span> <span class="o">=</span> <span class="n">initializing_tokenizer</span><span class="p">(</span><span class="n">model_config</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">initializing_model</span><span class="p">(</span><span class="n">model_config</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">model_config</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="c1"># Format data for model</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="s2">&quot;&gt;&gt;eng&lt;&lt; &quot;</span> <span class="o">+</span> <span class="n">data</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Translating ...&quot;</span><span class="p">)</span>
+    <span class="n">translated_text</span><span class="p">,</span> <span class="n">confidence</span> <span class="o">=</span> <span class="n">generating_translation</span><span class="p">(</span><span class="n">tokenizer</span><span class="p">,</span>
+                                                         <span class="n">model</span><span class="p">,</span>
+                                                         <span class="n">data</span><span class="p">)</span>
+    <span class="n">confidence_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">confidence</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">translation_list</span><span class="p">:</span>
+        <span class="n">translation_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">translated_text</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">translation_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">translation_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">translated_text</span>
+    <span class="k">return</span> <span class="n">translation_list</span><span class="p">,</span> <span class="n">confidence_list</span></div>
+
+
+
+<div class="viewcode-block" id="chunk_data">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference.chunk_data">[docs]</a>
+<span class="k">def</span> <span class="nf">chunk_data</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">text</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Splits the input text into smaller chunks for easier processing.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        chunk_size (int): Maximum number of words per chunk.</span>
+<span class="sd">        text (str): The input text to split.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        list: List of text chunks.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">chunk_text</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+    <span class="n">chunk_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)),</span> <span class="n">chunk_size</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">+</span> <span class="n">chunk_size</span> <span class="o">&gt;</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)):</span>
+            <span class="n">chunk_text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)[</span><span class="n">i</span><span class="p">:]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">chunk_text</span> <span class="o">=</span> <span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">)[</span><span class="n">i</span><span class="p">:</span><span class="n">i</span> <span class="o">+</span> <span class="n">chunk_size</span><span class="p">]</span>
+        <span class="n">chunk_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">chunk_text</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">chunk_list</span></div>
+
+
+
+<div class="viewcode-block" id="process_chunk">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference.process_chunk">[docs]</a>
+<span class="k">def</span> <span class="nf">process_chunk</span><span class="p">(</span><span class="n">chunk_list</span><span class="p">,</span>
+                  <span class="n">code</span><span class="p">,</span>
+                  <span class="n">translation_func</span><span class="p">,</span>
+                  <span class="n">translation_list</span><span class="p">,</span>
+                  <span class="n">confidence_list</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      Processes text chunks for translation.</span>
+
+<span class="sd">      Args:</span>
+<span class="sd">          chunk_list (list): List of text chunks.</span>
+<span class="sd">          code (str): Language code for the input text.</span>
+<span class="sd">          translation_func (function): The translation function</span>
+<span class="sd">            (direct or indirect).</span>
+<span class="sd">          translation_list (list): List to store translations.</span>
+<span class="sd">          confidence_list (list): List to store confidence scores.</span>
+
+<span class="sd">      Returns:</span>
+<span class="sd">          tuple:</span>
+<span class="sd">            - Updated translation list</span>
+<span class="sd">            - Updated confidence list.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">for</span> <span class="n">chunk</span> <span class="ow">in</span> <span class="n">chunk_list</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Processing Text...&quot;</span><span class="p">)</span>
+        <span class="c1"># Processing</span>
+        <span class="n">processed_text</span><span class="p">,</span> <span class="n">model_config</span> <span class="o">=</span> <span class="n">processing</span><span class="p">(</span><span class="n">chunk</span><span class="p">,</span> <span class="n">code</span><span class="p">)</span>
+        <span class="c1"># Translating</span>
+        <span class="n">translation_list</span><span class="p">,</span> <span class="n">confidence_list</span> <span class="o">=</span> <span class="n">translation_func</span><span class="p">(</span><span class="n">processed_text</span><span class="p">,</span>
+                                                             <span class="n">model_config</span><span class="p">,</span>
+                                                             <span class="n">translation_list</span><span class="p">,</span>
+                                                             <span class="n">confidence_list</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">translation_list</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">translation_list</span><span class="p">,</span> <span class="n">confidence_list</span></div>
+
+
+
+<div class="viewcode-block" id="inference">
+<a class="viewcode-back" href="../../lingowiz.html#lingowiz.inference.inference">[docs]</a>
+<span class="k">def</span> <span class="nf">inference</span><span class="p">(</span><span class="n">text</span><span class="p">):</span>
+
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">      Performs full inference for translation, including language detection,</span>
+<span class="sd">      preprocessing, translation, and rating computation.</span>
+
+<span class="sd">      Args:</span>
+<span class="sd">          text (str): The input text to translate.</span>
+
+<span class="sd">      Returns:</span>
+<span class="sd">          tuple: A tuple containing:</span>
+<span class="sd">              - list: Translations in the target language(s).</span>
+<span class="sd">              - list: Detected source languages.</span>
+<span class="sd">              - list: Ratings for translation quality.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># Initializing lists</span>
+    <span class="n">source_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">translation_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">confidence_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">confidence_en</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">confidence_ar</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">rating_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="c1"># Detecting Language</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Detecting Language ...&quot;</span><span class="p">)</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="n">detect_language</span><span class="p">(</span><span class="n">text</span><span class="p">)</span>
+    <span class="n">source_language</span> <span class="o">=</span> <span class="n">langcodes</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">code</span><span class="p">)</span><span class="o">.</span><span class="n">language_name</span><span class="p">()</span>
+
+    <span class="n">chunk_size</span> <span class="o">=</span> <span class="mi">100</span>
+    <span class="k">if</span> <span class="n">code</span> <span class="ow">in</span> <span class="n">indirect_translation_language</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Indirect Translation </span><span class="si">{</span><span class="n">source_language</span><span class="si">}</span><span class="s2"> to English to Arabic&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">source_list</span><span class="p">:</span>
+            <span class="n">source_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">source_language</span><span class="p">)</span>
+            <span class="n">source_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="s2">&quot;English&quot;</span><span class="p">)</span>
+
+        <span class="c1"># Indirect Translation, update source language</span>
+        <span class="c1"># Translation 1 - Source - English</span>
+        <span class="n">source_language</span> <span class="o">=</span> <span class="n">source_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">))</span> <span class="o">&gt;</span> <span class="n">chunk_size</span><span class="p">:</span>
+            <span class="c1"># Chunking data if text too big</span>
+            <span class="n">chunk_list</span> <span class="o">=</span> <span class="n">chunk_data</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>
+            <span class="c1"># Process chunk data</span>
+            <span class="n">translation_list</span><span class="p">,</span> <span class="n">confidence_list</span> <span class="o">=</span> <span class="n">process_chunk</span><span class="p">(</span><span class="n">chunk_list</span><span class="p">,</span>
+                                                              <span class="n">code</span><span class="p">,</span>
+                                                              <span class="n">indirect_translation</span><span class="p">,</span>
+                                                              <span class="n">translation_list</span><span class="p">,</span>
+                                                              <span class="n">confidence_list</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">confidence_list</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">confidence_ar</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">confidence_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">confidence_en</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">confidence_list</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">confidence_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">confidence_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">confidence_ar</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">confidence_ar</span><span class="p">))</span>
+            <span class="n">confidence_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">confidence_en</span><span class="p">)</span><span class="o">/</span><span class="nb">len</span><span class="p">(</span><span class="n">confidence_en</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Processing Text ...&quot;</span><span class="p">)</span>
+            <span class="n">processed_text</span><span class="p">,</span> <span class="n">model_config</span> <span class="o">=</span> <span class="n">processing</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">code</span><span class="p">)</span>  <span class="c1"># Processing</span>
+            <span class="n">translation_list</span><span class="p">,</span> <span class="n">confidence_list</span> <span class="o">=</span> <span class="n">indirect_translation</span><span class="p">(</span><span class="n">processed_text</span><span class="p">,</span>
+                                                                     <span class="n">model_config</span><span class="p">,</span>
+                                                                     <span class="n">translation_list</span><span class="p">,</span>
+                                                                     <span class="n">confidence_list</span><span class="p">)</span>
+
+        <span class="c1"># Translation 2 - English - Arabic</span>
+        <span class="n">source_language</span> <span class="o">=</span> <span class="n">source_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Direct Translation </span><span class="si">{</span><span class="n">source_language</span><span class="si">}</span><span class="s2"> to Arabic&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">source_list</span><span class="p">:</span>
+            <span class="n">source_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">source_language</span><span class="p">)</span>
+
+        <span class="c1"># Direct translation</span>
+        <span class="c1"># Translation Source - Arabic</span>
+        <span class="n">source_language</span> <span class="o">=</span> <span class="n">source_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">text</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot; &quot;</span><span class="p">))</span> <span class="o">&gt;</span> <span class="n">chunk_size</span><span class="p">:</span>
+            <span class="n">chunk_list</span> <span class="o">=</span> <span class="n">chunk_data</span><span class="p">(</span><span class="n">chunk_size</span><span class="p">,</span> <span class="n">text</span><span class="p">)</span>  <span class="c1"># Chunking data if text too big</span>
+            <span class="n">translation_list</span><span class="p">,</span> <span class="n">confidence_list</span> <span class="o">=</span> <span class="n">process_chunk</span><span class="p">(</span><span class="n">chunk_list</span><span class="p">,</span>
+                                                              <span class="n">code</span><span class="p">,</span>
+                                                              <span class="n">direct_translation</span><span class="p">,</span>
+                                                              <span class="n">translation_list</span><span class="p">,</span>
+                                                              <span class="n">confidence_list</span><span class="p">)</span>  <span class="c1"># process chunk data</span>
+            <span class="n">confidence</span> <span class="o">=</span> <span class="nb">sum</span><span class="p">(</span><span class="n">confidence_list</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">confidence_list</span><span class="p">)</span>
+            <span class="n">confidence_list</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="n">confidence_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">confidence</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Processing Text ...&quot;</span><span class="p">)</span>
+            <span class="n">processed_text</span><span class="p">,</span> <span class="n">model_config</span> <span class="o">=</span> <span class="n">processing</span><span class="p">(</span><span class="n">text</span><span class="p">,</span> <span class="n">code</span><span class="p">)</span>
+            <span class="n">translation_list</span><span class="p">,</span> <span class="n">confidence_list</span> <span class="o">=</span> <span class="n">direct_translation</span><span class="p">(</span><span class="n">processed_text</span><span class="p">,</span>
+                                                                   <span class="n">model_config</span><span class="p">,</span>
+                                                                   <span class="n">translation_list</span><span class="p">,</span>
+                                                                   <span class="n">confidence_list</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">confidence_list</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">2</span><span class="p">):</span>
+            <span class="n">translated_text</span> <span class="o">=</span> <span class="n">translation_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">confidence</span> <span class="o">=</span> <span class="n">confidence_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">tool</span> <span class="o">=</span> <span class="n">tools</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="n">rating</span> <span class="o">=</span> <span class="n">compute_rating</span><span class="p">(</span><span class="n">tool</span><span class="p">,</span>
+                                    <span class="n">translated_text</span><span class="p">,</span>
+                                    <span class="n">confidence</span><span class="p">)</span>
+            <span class="n">rating_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rating</span><span class="p">)</span>
+            <span class="n">source_language</span> <span class="o">=</span> <span class="n">source_list</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">text</span> <span class="o">=</span> <span class="n">translation_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="s2">&quot;Arabic&quot;</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">target</span> <span class="o">=</span> <span class="s2">&quot;English&quot;</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Logging ...&quot;</span><span class="p">)</span>
+            <span class="n">mlflow_logging</span><span class="p">(</span><span class="n">source_language</span><span class="p">,</span>
+                           <span class="n">target</span><span class="p">,</span>
+                           <span class="n">text</span><span class="p">,</span>
+                           <span class="n">translated_text</span><span class="p">,</span>
+                           <span class="n">rating</span><span class="p">)</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">translated_text</span> <span class="o">=</span> <span class="n">translation_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">confidence</span> <span class="o">=</span> <span class="n">confidence_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">tool</span> <span class="o">=</span> <span class="n">tools</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">source_language</span> <span class="o">=</span> <span class="n">source_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">rating</span> <span class="o">=</span> <span class="n">compute_rating</span><span class="p">(</span><span class="n">tool</span><span class="p">,</span>
+                                <span class="n">translated_text</span><span class="p">,</span>
+                                <span class="n">confidence</span><span class="p">)</span>
+        <span class="n">rating_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">rating</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Logging ...&quot;</span><span class="p">)</span>
+        <span class="n">mlflow_logging</span><span class="p">(</span><span class="n">source_language</span><span class="p">,</span>
+                       <span class="s2">&quot;Arabic&quot;</span><span class="p">,</span>
+                       <span class="n">text</span><span class="p">,</span>
+                       <span class="n">translated_text</span><span class="p">,</span>
+                       <span class="n">rating</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Logging Complete&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">translation_list</span><span class="p">,</span> <span class="n">source_list</span><span class="p">,</span> <span class="n">rating_list</span></div>
+
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Patrick Saadde.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
