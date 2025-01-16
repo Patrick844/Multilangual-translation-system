@@ -35,7 +35,7 @@ def parse_tmx(input_file: str,
         None
     """
 
-    source_code, source_lang = source
+    source_lang, source_code = source
     target_lang, target_code = target
 
     # Get the body of the TMX file, where the translation units are located

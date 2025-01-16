@@ -73,6 +73,7 @@ import re
 import unicodedata
 import pandas as pd
 from tqdm import tqdm
+import swifter
 from camel_tools.utils.dediac import dediac_ar
 from camel_tools.utils.normalize import normalize_unicode as n_unicode
 import langcodes
@@ -787,24 +788,24 @@ def format_table(filepath: str, source: str, output_file: str) -> None:
         print("FastText model loaded.")
 
         # Step 8: Update rows for MarianMT fine-tuning by adding language codes
-        print("Updating rows for MarianMT fine-tuning...")
-        df = df.swifter.apply(lambda row: update_rows_2(row,
-                                                        source,
-                                                        fasttext_model),
-                              axis=1)
-        print("Rows updated for MarianMT fine-tuning.")
-        print("")
+        # print("Updating rows for MarianMT fine-tuning...")
+        # df = df.swifter.apply(lambda row: update_rows_2(row,
+        #                                                 source,
+        #                                                 fasttext_model),
+        #                       axis=1)
+        # print("Rows updated for MarianMT fine-tuning.")
+        # print("")
 
-        # Step 9: Get the language code for the source language
-        code = get_language_code(source)
+        # # Step 9: Get the language code for the source language
+        # code = get_language_code(source)
 
-        # Step 10: Apply mask for filtering rows
-        print("Applying mask for specific Arabic and source string slices...")
-        mask_arabic = df["Arabic"].str.contains(r">>ara<<")
-        mask_source = df[source].str.contains(f">>{code}<<")
-        df = df[mask_arabic & mask_source]
-        print(f"{len(df)} rows remaining after applying the mask.")
-        print("")
+        # # Step 10: Apply mask for filtering rows
+        # print("Applying mask for specific Arabic and source string slices...")
+        # mask_arabic = df["Arabic"].str.contains(r">>ara<<")
+        # mask_source = df[source].str.contains(f">>{code}<<")
+        # df = df[mask_arabic & mask_source]
+        # print(f"{len(df)} rows remaining after applying the mask.")
+        # print("")
 
         # Step 11: Save the processed DataFrame to a new CSV file
         print("Saving the processed data to a CSV file...")

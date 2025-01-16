@@ -330,6 +330,7 @@ class TextPreprocessor:
             str: The text with expanded contractions.
         """
         contractions = {"I'm": "I am",
+                        "im": "i am"
                         "you're": "you are",
                         "isn't": "is not",
                         "can't": "cannot"}

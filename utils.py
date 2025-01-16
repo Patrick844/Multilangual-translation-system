@@ -1,41 +1,37 @@
 model_dict = {
-    """
-    A dictionary mapping ISO 639-1 language codes to lists of model names for translation.
+    # A dictionary mapping ISO 639-1 language codes to lists of model names for translation.
 
-    Each key in the dictionary represents a source language, and the value is a list of
-    Helsinki-NLP MarianMT model names. These models are used for translating between
-    the source language and Arabic, or in the case of Romanian, to and from English
-    and Arabic.
+    # Each key in the dictionary represents a source language, and the value is a list of
+    # Helsinki-NLP MarianMT model names. These models are used for translating between
+    # the source language and Arabic, or in the case of Romanian, to and from English
+    # and Arabic.
 
-    Structure:
-    - For direct translations: Lists contain two models for the same source-target pair.
-    - For indirect translations (e.g., Romanian): Lists include intermediate English models.
+    # Structure:
+    # - For direct translations: Lists contain two models for the same source-target pair.
+    # - For indirect translations (e.g., Romanian): Lists include intermediate English models.
 
-    Example:
-        model_dict = {
-            "eng": ["Helsinki-NLP/opus-mt-en-ar", "Helsinki-NLP/opus-mt-en-ar"],
-            "ron": [
-                "Helsinki-NLP/opus-mt-roa-en",
-                "Helsinki-NLP/opus-mt-roa-en",
-                "Helsinki-NLP/opus-mt-en-ar",
-                "Helsinki-NLP/opus-mt-en-ar",
-            ],
-        }
+    # Example:
+    # "eng": ["Helsinki-NLP/opus-mt-en-ar", "Helsinki-NLP/opus-mt-en-ar"],
+    # "ron": [
+    #     "Helsinki-NLP/opus-mt-roa-en",
+    #     "Helsinki-NLP/opus-mt-roa-en",
+    #     "Helsinki-NLP/opus-mt-en-ar",
+    #     "Helsinki-NLP/opus-mt-en-ar",
+    # ],
 
-    Keys:
-        - ISO 639-1 codes for supported languages (e.g., "eng" for English, "fra" for French).
-    Values:
-        - Lists of MarianMT model names for translation.
-
-    """
-    "eng": ["Helsinki-NLP/opus-mt-en-ar","Helsinki-NLP/opus-mt-en-ar"],
-    "fra": ["Helsinki-NLP/opus-mt-fr-ar","Helsinki-NLP/opus-mt-fr-ar"],
-    "ita": ["Helsinki-NLP/opus-mt-it-ar","Helsinki-NLP/opus-mt-it-ar"],
-    "ron":["Helsinki-NLP/opus-mt-roa-en","Helsinki-NLP/opus-mt-roa-en","Helsinki-NLP/opus-mt-en-ar","Helsinki-NLP/opus-mt-en-ar"],
-    "rus":["Helsinki-NLP/opus-mt-ru-ar","Helsinki-NLP/opus-mt-ru-ar"],
-    "tur":["Helsinki-NLP/opus-mt-tr-ar","Helsinki-NLP/opus-mt-tr-ar"],
-    "spa":["Helsinki-NLP/opus-mt-es-ar","Helsinki-NLP/opus-mt-es-ar"],
-    "ell":["Helsinki-NLP/opus-mt-el-ar","Helsinki-NLP/opus-mt-el-ar"]
+    "eng": ["Helsinki-NLP/opus-mt-en-ar", "Helsinki-NLP/opus-mt-en-ar"],
+    "ita": ["Helsinki-NLP/opus-mt-it-ar", "Helsinki-NLP/opus-mt-it-ar"],
+    "fra": ["Helsinki-NLP/opus-mt-fr-ar", "Helsinki-NLP/opus-mt-fr-ar"],
+    "ron": [
+        "Helsinki-NLP/opus-mt-roa-en",
+        "Helsinki-NLP/opus-mt-roa-en",
+        "Helsinki-NLP/opus-mt-en-ar",
+        "Helsinki-NLP/opus-mt-en-ar",
+    ],
+    "rus": ["Helsinki-NLP/opus-mt-ru-ar", "Helsinki-NLP/opus-mt-ru-ar"],
+    "tur": ["Helsinki-NLP/opus-mt-tr-ar", "Helsinki-NLP/opus-mt-tr-ar"],
+    "spa": ["Helsinki-NLP/opus-mt-es-ar", "Helsinki-NLP/opus-mt-es-ar"],
+    "ell": ["Helsinki-NLP/opus-mt-el-ar", "Helsinki-NLP/opus-mt-el-ar"],
 }
 
 
